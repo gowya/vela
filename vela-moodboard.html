@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Vela — Moodboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --sable: #F7F3EC;
+    --encre: #2B2A28;
+    --vin: #6B3F45;
+    --sauge: #A9B8AC;
+    --brume: #D8D3C9;
+    --blanc-chaud: #FFFDF9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--sable);
+    color: var(--encre);
+    font-family: 'Inter', sans-serif;
+    padding: 64px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--vin);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 56px;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: #6b6862;
+    max-width: 480px;
+    margin-bottom: 64px;
+    line-height: 1.5;
+  }
+
+  section { margin-bottom: 72px; }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #8a877f;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--brume);
+  }
+
+  /* Logo block */
+  .logo-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .logo-card {
+    background: var(--blanc-chaud);
+    border: 1px solid var(--brume);
+    border-radius: 8px;
+    padding: 40px;
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .logo-card.dark {
+    background: #1C1B19;
+    border-color: #1C1B19;
+  }
+  .logo-card svg { width: 72px; height: 72px; }
+  .wordmark {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    color: var(--vin);
+  }
+  .logo-card.dark .wordmark { color: #C98A90; }
+  .logo-caption {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #8a877f;
+    text-align: center;
+  }
+  .logo-card.dark .logo-caption { color: #8a8681; }
+
+  /* Palette */
+  .palette-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .swatch {
+    border-radius: 8px;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 12px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .swatch-name {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .swatch-hex {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    opacity: 0.8;
+  }
+
+  /* Typography specimen */
+  .type-specimen {
+    background: var(--blanc-chaud);
+    border: 1px solid var(--brume);
+    border-radius: 8px;
+    padding: 40px;
+  }
+  .type-row { margin-bottom: 28px; }
+  .type-row:last-child { margin-bottom: 0; }
+  .type-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #8a877f;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .display-sample { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 400; }
+  .body-sample { font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 400; line-height: 1.5; max-width: 560px; color: #4a4843; }
+  .mono-sample { font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--vin); }
+
+  /* UI mockup */
+  .ui-mock {
+    background: var(--blanc-chaud);
+    border: 1px solid var(--brume);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .ui-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--brume);
+  }
+  .ui-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brume); }
+  .ui-topbar-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b6862;
+    margin-left: 8px;
+  }
+  .ui-body { display: flex; }
+  .ui-sidebar {
+    width: 180px;
+    padding: 20px 16px;
+    border-right: 1px solid var(--brume);
+  }
+  .ui-nav-item {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: #6b6862;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+  .ui-nav-item.active { background: var(--sable); color: var(--vin); font-weight: 500; }
+  .ui-content { flex: 1; padding: 28px 32px; }
+  .ui-patient-name {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .ui-patient-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #8a877f;
+    margin-bottom: 24px;
+  }
+  .ui-note-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #8a877f;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .ui-note {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #4a4843;
+    background: var(--sable);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .ui-btn {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--vin);
+    padding: 9px 18px;
+    border-radius: 6px;
+  }
+
+  .footer-note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #8a877f;
+    text-align: center;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="eyebrow">Moodboard — piste de marque</div>
+  <h1>vela</h1>
+  <p class="subtitle">Posée, fiable, présente. Une marque qui s'efface pendant l'essentiel et redevient utile entre deux séances.</p>
+
+  <section>
+    <div class="section-title">Logo — piste "le voile"</div>
+    <div class="logo-row">
+      <div class="logo-card">
+        <svg viewBox="0 0 100 100" fill="none">
+          <path d="M20 70 Q 50 15, 80 55" stroke="#6B3F45" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-caption">Symbole seul — favicon, icône app</span>
+      </div>
+      <div class="logo-card">
+        <svg viewBox="0 0 100 100" fill="none">
+          <path d="M20 70 Q 50 15, 80 55" stroke="#6B3F45" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark">vela</div>
+        <span class="logo-caption">Symbole + wordmark — site, documents</span>
+      </div>
+      <div class="logo-card dark">
+        <svg viewBox="0 0 100 100" fill="none">
+          <path d="M20 70 Q 50 15, 80 55" stroke="#C98A90" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark">vela</div>
+        <span class="logo-caption">Version mode sombre</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Palette</div>
+    <div class="palette-row">
+      <div class="swatch" style="background:#F7F3EC;">
+        <span class="swatch-name">Sable</span><span class="swatch-hex">#F7F3EC</span>
+      </div>
+      <div class="swatch" style="background:#2B2A28; color:#F7F3EC;">
+        <span class="swatch-name">Encre</span><span class="swatch-hex">#2B2A28</span>
+      </div>
+      <div class="swatch" style="background:#6B3F45; color:#fff;">
+        <span class="swatch-name">Vin</span><span class="swatch-hex">#6B3F45</span>
+      </div>
+      <div class="swatch" style="background:#A9B8AC;">
+        <span class="swatch-name">Sauge</span><span class="swatch-hex">#A9B8AC</span>
+      </div>
+      <div class="swatch" style="background:#D8D3C9;">
+        <span class="swatch-name">Brume</span><span class="swatch-hex">#D8D3C9</span>
+      </div>
+      <div class="swatch" style="background:#FFFDF9; border:1px solid #D8D3C9;">
+        <span class="swatch-name">Blanc chaud</span><span class="swatch-hex">#FFFDF9</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Typographie</div>
+    <div class="type-specimen">
+      <div class="type-row">
+        <div class="type-label">Fraunces — display, marque uniquement</div>
+        <div class="display-sample">Vela veille pendant la séance</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">Inter — interface produit</div>
+        <div class="body-sample">Le dossier patient reste accessible en un geste, sans jamais interrompre la consultation en cours. Chaque écran a une seule fonction.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">IBM Plex Mono — données, métadonnées</div>
+        <div class="mono-sample">Dernière séance — 02.07.2026 · 14 consultations · #PAT-0042</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Application de l'interface</div>
+    <div class="ui-mock">
+      <div class="ui-topbar">
+        <div class="ui-dot"></div><div class="ui-dot"></div><div class="ui-dot"></div>
+        <span class="ui-topbar-title">vela — cabinet</span>
+      </div>
+      <div class="ui-body">
+        <div class="ui-sidebar">
+          <div class="ui-nav-item active">Dossiers patients</div>
+          <div class="ui-nav-item">Agenda</div>
+          <div class="ui-nav-item">Notes</div>
+          <div class="ui-nav-item">Facturation</div>
+        </div>
+        <div class="ui-content">
+          <div class="ui-patient-name">Claire M.</div>
+          <div class="ui-patient-meta">SUIVI DEPUIS MARS 2025 · 9E SÉANCE</div>
+          <div class="ui-note-label">Note de séance</div>
+          <div class="ui-note">Reprise du travail sur la confiance en soi entamé la semaine dernière. Progrès notable sur la gestion de l'anxiété anticipatoire.</div>
+          <span class="ui-btn">Enregistrer la note</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer-note">VELA — BRAND MOODBOARD — V1</p>
+
+</body>
+</html>
