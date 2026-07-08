@@ -21,7 +21,7 @@ export const authOptions: AuthOptions = {
         }
 
         const { rows } = await pool.query(
-          "SELECT id, email, name, password_hash FROM practitioners WHERE email = $1",
+          "SELECT id, email, first_name, last_name, password_hash FROM practitioners WHERE email = $1",
           [credentials.email.toLowerCase()]
         );
         const practitioner = rows[0];
@@ -40,7 +40,7 @@ export const authOptions: AuthOptions = {
         return {
           id: practitioner.id,
           email: practitioner.email,
-          name: practitioner.name,
+          name: [practitioner.first_name, practitioner.last_name].filter(Boolean).join(" "),
         };
       },
     }),
@@ -49,12 +49,24 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        if (user.name) {
+          token.name = user.name;
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id;
+
+        if (token.id) {
+          const { rows } = await pool.query(
+            "SELECT first_name, last_name FROM practitioners WHERE id = $1",
+            [token.id]
+          );
+          const derivedName = [rows[0]?.first_name, rows[0]?.last_name].filter(Boolean).join(" ");
+          session.user.name = derivedName || session.user.name || token.name;
+        }
       }
       return session;
     },

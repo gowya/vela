@@ -65,3 +65,52 @@ CREATE TABLE qcm_responses (
   answers JSONB NOT NULL DEFAULT '{}',
   submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Brique 5 : inscription multi-écrans, vérification email, onboarding, bêta
+
+ALTER TABLE practitioners
+  ADD COLUMN first_name TEXT,
+  ADD COLUMN last_name TEXT,
+  ADD COLUMN phone TEXT,
+  ADD COLUMN email_verified_at TIMESTAMPTZ,
+  ADD COLUMN onboarding_completed_at TIMESTAMPTZ,
+  ADD COLUMN beta_notice_dismissed_at TIMESTAMPTZ;
+
+-- Backfill des comptes existants : split de `name` sur le premier espace.
+UPDATE practitioners
+SET first_name = COALESCE(NULLIF(split_part(name, ' ', 1), ''), name),
+    last_name  = NULLIF(substring(name FROM position(' ' IN name) + 1), '')
+WHERE first_name IS NULL;
+
+-- Comptes existants traités comme déjà onboardés/vérifiés pour ne pas les
+-- renvoyer dans l'onboarding rétroactivement.
+UPDATE practitioners
+SET onboarding_completed_at = COALESCE(onboarding_completed_at, created_at),
+    email_verified_at = COALESCE(email_verified_at, created_at)
+WHERE first_name IS NOT NULL;
+
+ALTER TABLE practitioners DROP COLUMN name;
+
+CREATE TABLE email_verification_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  practitioner_id UUID NOT NULL REFERENCES practitioners(id) ON DELETE CASCADE,
+  token TEXT UNIQUE NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_email_verification_tokens_practitioner ON email_verification_tokens(practitioner_id);
+
+CREATE TABLE feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  practitioner_id UUID NOT NULL REFERENCES practitioners(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_feedback_practitioner ON feedback(practitioner_id);
+
+-- Compteur de visites dashboard, utilisé pour ne pas afficher la modale bêta
+-- dès la toute première arrivée post-onboarding (retour revue Karen).
+ALTER TABLE practitioners
+  ADD COLUMN dashboard_visits_count INTEGER NOT NULL DEFAULT 0;

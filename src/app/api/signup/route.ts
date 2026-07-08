@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
+import { sendVerificationEmail } from "@/lib/email";
+import { generateVerificationToken, VERIFICATION_TOKEN_TTL_MS } from "@/lib/verification-token";
 
 const signupSchema = z
   .object({
-    name: z.string().trim().min(2, "Le nom est trop court."),
     email: z.string().trim().toLowerCase().email("Email invalide."),
-    specialty: z.string().trim().optional(),
     password: z.string().min(8, "8 caractères minimum."),
     confirmPassword: z.string(),
     // Consentement RGPD requis pour la création du compte.
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { name, email, specialty, password } = parsed.data;
+  const { email, password } = parsed.data;
 
   const existing = await pool.query(
     "SELECT id FROM practitioners WHERE email = $1",
@@ -50,11 +50,22 @@ export async function POST(request: Request) {
   const passwordHash = await bcrypt.hash(password, 12);
 
   const { rows } = await pool.query(
-    `INSERT INTO practitioners (email, password_hash, name, specialty)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, email, name, specialty, created_at`,
-    [email, passwordHash, name, specialty || null]
+    `INSERT INTO practitioners (email, password_hash)
+     VALUES ($1, $2)
+     RETURNING id, email`,
+    [email, passwordHash]
+  );
+  const practitioner = rows[0];
+
+  const token = generateVerificationToken();
+  const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
+  await pool.query(
+    `INSERT INTO email_verification_tokens (practitioner_id, token, expires_at)
+     VALUES ($1, $2, $3)`,
+    [practitioner.id, token, expiresAt]
   );
 
-  return NextResponse.json({ practitioner: rows[0] }, { status: 201 });
+  await sendVerificationEmail(practitioner.email, token);
+
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

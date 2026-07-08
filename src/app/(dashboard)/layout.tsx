@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BetaNoticeDialog } from "@/components/BetaNoticeDialog";
+import pool from "@/lib/db";
 
 export default async function DashboardLayout({
   children,
@@ -14,12 +16,32 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const { rows } = await pool.query(
+    `SELECT onboarding_completed_at, beta_notice_dismissed_at,
+            dashboard_visits_count + 1 AS dashboard_visits_count
+     FROM practitioners WHERE id = $1`,
+    [session.user.id]
+  );
+  const profile = rows[0];
+
+  if (!profile?.onboarding_completed_at) {
+    redirect("/onboarding");
+  }
+
+  await pool.query(
+    "UPDATE practitioners SET dashboard_visits_count = dashboard_visits_count + 1 WHERE id = $1",
+    [session.user.id]
+  );
+
+  const showBetaNotice = profile.dashboard_visits_count >= 2 && !profile.beta_notice_dismissed_at;
+
   const userName = session.user?.name ?? session.user?.email ?? "?";
 
   return (
     <div className="flex min-h-screen">
       <AppSidebar userName={userName} />
       <div className="flex-1">{children}</div>
+      <BetaNoticeDialog initialOpen={showBetaNotice} />
     </div>
   );
 }
