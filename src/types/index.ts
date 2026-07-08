@@ -1,3 +1,5 @@
+import type { JSONContent } from "@tiptap/core";
+
 export interface Practitioner {
   id: string;
   email: string;
@@ -15,23 +17,86 @@ export interface Patient {
   phone: string | null;
   birthDate: string | null;
   intakeNotes: string | null;
+  genderIdentity: string | null;
+  identifiedIssue: string | null;
+  address: string | null;
+  status: string | null;
+  lastAppointmentAt: Date | null;
+  nextAppointmentAt: Date | null;
   createdAt: Date;
 }
 
-// Ces deux-là sont prévues pour les briques 3 et 4, pas encore utilisées.
+export type CustomFieldType = "text" | "choice" | "date" | "number";
+
+export interface CustomFieldDefinition {
+  id: string;
+  practitionerId: string;
+  fieldName: string;
+  fieldType: CustomFieldType;
+  createdAt: Date;
+}
+
+export interface PatientCustomFieldValue {
+  id: string;
+  patientId: string;
+  fieldDefinitionId: string;
+  value: string | null;
+  updatedAt: Date;
+}
+
+// Éditeur riche façon Notion (Tiptap/ProseMirror) : le contenu est un document
+// JSON arborescent (titres, listes, checklist, pièces jointes, formatage inline
+// gras/italique/souligné/taille/couleur), pas une simple liste de lignes à texte
+// plat — nécessaire pour représenter du formatage mixte au sein d'une même ligne.
+export type ConsultationContent = JSONContent;
+
+// Un template n'est qu'un point de départ (titre + contenu pré-rempli) capturé
+// depuis une consultation existante via "Enregistrer comme template" — ce n'est
+// pas un formulaire structuré à construire à l'avance.
 export interface ConsultationTemplate {
   id: string;
   practitionerId: string;
   name: string;
-  fields: Record<string, unknown>;
+  title: string | null;
+  content: ConsultationContent;
+  createdAt: Date;
+}
+
+// Pièce jointe rattachée à une consultation (nœud "attachment" dans le document
+// Tiptap). Les fichiers ne sont jamais servis par URL directe : uniquement via
+// une route API authentifiée (voir src/app/api/attachments/[id]/route.ts).
+export interface ConsultationAttachment {
+  id: string;
+  consultationId: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
   createdAt: Date;
 }
 
 export interface Consultation {
   id: string;
   patientId: string;
-  templateId: string;
-  content: Record<string, unknown>;
+  templateId: string | null;
+  title: string | null;
+  content: ConsultationContent;
+  contentText: string;
   date: Date;
+  updatedAt: Date;
   createdAt: Date;
+}
+
+// Version allégée retournée par la liste : jamais le contenu complet (données de
+// santé sensibles), seulement un extrait tronqué pour l'aperçu.
+export interface ConsultationListItem {
+  id: string;
+  patientId: string;
+  patientFirstName: string;
+  patientLastName: string;
+  templateId: string | null;
+  templateName: string | null;
+  title: string | null;
+  excerpt: string;
+  date: Date;
+  updatedAt: Date;
 }

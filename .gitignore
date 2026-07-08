@@ -5,3 +5,23 @@ node_modules
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
+.vercel
+.env*
+
+# Stockage local temporaire des pièces jointes de consultation (dev uniquement,
+# voir src/lib/attachment-storage.ts) — jamais commité, contient des fichiers
+# patients potentiellement sensibles.
+.attachments
+
+# Données Postgres locales (dev uniquement) — jamais commité, contient des
+# données patients de test.
+.pgdata
+
+# Config Claude Code locale à la machine (permissions, etc.)
+.claude/settings.local.json
+
+# Fichier de handoff design volumineux, non versionné.
+shadcnui Design System-handoff.zip
+
+__pycache__/
+*.pyc
