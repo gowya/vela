@@ -5,22 +5,16 @@ import pool from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
 import { generateVerificationToken, VERIFICATION_TOKEN_TTL_MS } from "@/lib/verification-token";
 
-const signupSchema = z
-  .object({
-    email: z.string().trim().toLowerCase().email("Email invalide."),
-    password: z.string().min(8, "8 caractères minimum."),
-    confirmPassword: z.string(),
-    // Consentement RGPD requis pour la création du compte.
-    consent: z.literal(true, {
-      errorMap: () => ({
-        message: "Le consentement RGPD est requis pour créer un compte.",
-      }),
+const signupSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Email invalide."),
+  password: z.string().min(8, "8 caractères minimum."),
+  // Consentement RGPD requis pour la création du compte.
+  consent: z.literal(true, {
+    errorMap: () => ({
+      message: "Le consentement RGPD est requis pour créer un compte.",
     }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Les mots de passe ne correspondent pas.",
-    path: ["confirmPassword"],
-  });
+  }),
+});
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -68,6 +69,8 @@ export function ConsultationEditor({
   const [saveAsTemplateName, setSaveAsTemplateName] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [saveAsTemplateError, setSaveAsTemplateError] = useState<string | null>(null);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const currentIdRef = useRef<string | null>(consultationId);
   const updatedAtRef = useRef<string | null>(null);
@@ -273,14 +276,16 @@ export function ConsultationEditor({
     };
   }, [save]);
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!currentIdRef.current) {
       router.push("/consultations");
       return;
     }
-    if (!confirm("Supprimer cette consultation ? Elle ne sera plus visible dans vos listes.")) {
-      return;
-    }
+    setDeleteDialogOpen(true);
+  }
+
+  async function confirmDelete() {
+    setDeleteDialogOpen(false);
     const response = await fetch(`/api/consultations/${currentIdRef.current}`, {
       method: "DELETE",
     });
@@ -318,7 +323,7 @@ export function ConsultationEditor({
     setSaveAsTemplateError(null);
 
     if (!saveAsTemplateName.trim()) {
-      setSaveAsTemplateError("Le nom du template est requis.");
+      setSaveAsTemplateError("Le nom du modèle est requis.");
       return;
     }
 
@@ -336,7 +341,7 @@ export function ConsultationEditor({
 
     if (!response.ok) {
       const data = await response.json().catch(() => null);
-      setSaveAsTemplateError(data?.error ?? "La création du template a échoué.");
+      setSaveAsTemplateError(data?.error ?? "La création du modèle a échoué.");
       return;
     }
 
@@ -398,7 +403,7 @@ export function ConsultationEditor({
             </span>
           )}
           <Button type="button" variant="ghost" size="sm" onClick={handleDelete}>
-            Supprimer
+            {isBlankDraft ? "Annuler" : "Supprimer"}
           </Button>
         </div>
       </div>
@@ -440,7 +445,7 @@ export function ConsultationEditor({
               >
                 <SelectTrigger size="sm" className="w-auto gap-1.5">
                   <SquaresFourIcon size={12} />
-                  <SelectValue placeholder="Partir d'un template" />
+                  <SelectValue placeholder="Partir d'un modèle" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableTemplates.map((t) => (
@@ -460,7 +465,7 @@ export function ConsultationEditor({
                 setSaveAsTemplateOpen(true);
               }}
             >
-              Enregistrer comme template
+              Enregistrer comme modèle
             </Button>
           </div>
 
@@ -481,7 +486,7 @@ export function ConsultationEditor({
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Input
-              placeholder="Nom du template"
+              placeholder="Nom du modèle"
               value={saveAsTemplateName}
               onChange={(event) => setSaveAsTemplateName(event.target.value)}
               autoFocus
@@ -493,6 +498,25 @@ export function ConsultationEditor({
           <DialogFooter>
             <Button type="button" onClick={handleSaveAsTemplate} disabled={isSavingTemplate}>
               {isSavingTemplate ? "Enregistrement…" : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer cette consultation ?</DialogTitle>
+            <DialogDescription>
+              Elle ne sera plus visible dans vos listes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDelete}>
+              Supprimer
             </Button>
           </DialogFooter>
         </DialogContent>

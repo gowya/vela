@@ -27,7 +27,7 @@ const FIELD_TO_COLUMN: Record<string, string> = {
 
 async function getOwnedPatientCustomFields(patientId: string) {
   const { rows } = await pool.query(
-    `SELECT cfv.field_definition_id, cfd.field_name, cfd.field_type, cfv.value
+    `SELECT cfv.field_definition_id, cfd.field_name, cfd.field_type, cfd.options, cfd.allow_multiple, cfv.value
      FROM patient_custom_field_values cfv
      JOIN custom_field_definitions cfd ON cfd.id = cfv.field_definition_id
      WHERE cfv.patient_id = $1
@@ -38,6 +38,8 @@ async function getOwnedPatientCustomFields(patientId: string) {
     fieldDefinitionId: row.field_definition_id,
     fieldName: row.field_name,
     fieldType: row.field_type,
+    options: row.options as string[] | null,
+    allowMultiple: row.allow_multiple as boolean,
     value: row.value,
   }));
 }

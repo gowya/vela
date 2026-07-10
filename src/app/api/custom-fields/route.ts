@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   const { rows } = await pool.query(
-    `SELECT id, practitioner_id, field_name, field_type, created_at
+    `SELECT id, practitioner_id, field_name, field_type, options, allow_multiple, created_at
      FROM custom_field_definitions
      WHERE practitioner_id = $1
      ORDER BY created_at`,
@@ -39,13 +39,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { fieldName, fieldType } = parsed.data;
+  const { fieldName, fieldType, options, allowMultiple } = parsed.data;
 
   const { rows } = await pool.query(
-    `INSERT INTO custom_field_definitions (practitioner_id, field_name, field_type)
-     VALUES ($1, $2, $3)
-     RETURNING id, practitioner_id, field_name, field_type, created_at`,
-    [session.user.id, fieldName, fieldType]
+    `INSERT INTO custom_field_definitions (practitioner_id, field_name, field_type, options, allow_multiple)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, practitioner_id, field_name, field_type, options, allow_multiple, created_at`,
+    [session.user.id, fieldName, fieldType, options.length > 0 ? options : null, allowMultiple]
   );
 
   return NextResponse.json(

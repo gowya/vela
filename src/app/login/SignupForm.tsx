@@ -13,17 +13,27 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [consentError, setConsentError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const passwordStrength = password.length === 0 ? null : password.length < 8 ? "faible" : "fort";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setPasswordError(null);
+    setConsentError(false);
 
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+    if (password.length < 8) {
+      setPasswordError("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+
+    if (!consent) {
+      setConsentError(true);
       return;
     }
 
@@ -32,7 +42,7 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
     const response = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, confirmPassword, consent }),
+      body: JSON.stringify({ email, password, consent }),
     });
 
     const data = await response.json().catch(() => null);
@@ -76,9 +86,21 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
       </div>
 
       <div className="w-full">
-        <Label htmlFor="signup-password" className="mb-1">
-          Mot de passe
-        </Label>
+        <div className="mb-1 flex items-center justify-between">
+          <Label htmlFor="signup-password">Mot de passe</Label>
+          {passwordStrength && (
+            <span
+              aria-label={`Force du mot de passe : ${passwordStrength}`}
+              className={
+                passwordStrength === "fort"
+                  ? "text-xs text-emerald-600 dark:text-emerald-400"
+                  : "text-xs text-destructive"
+              }
+            >
+              {passwordStrength}
+            </span>
+          )}
+        </div>
         <Input
           id="signup-password"
           type="password"
@@ -88,31 +110,29 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-      </div>
-
-      <div className="w-full">
-        <Label htmlFor="signup-confirm-password" className="mb-1">
-          Confirmer le mot de passe
-        </Label>
-        <Input
-          id="signup-confirm-password"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
-          value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
-        />
+        {passwordError && <p className="mt-1 text-sm text-destructive">{passwordError}</p>}
       </div>
 
       <div className="mt-1 flex items-start gap-2">
         <Checkbox
           id="signup-consent"
           checked={consent}
-          onCheckedChange={(checked) => setConsent(checked === true)}
-          required
+          onCheckedChange={(checked) => {
+            setConsent(checked === true);
+            if (checked === true) {
+              setConsentError(false);
+            }
+          }}
+          aria-invalid={consentError}
         />
-        <Label htmlFor="signup-consent" className="text-sm font-normal text-muted-foreground">
+        <Label
+          htmlFor="signup-consent"
+          className={
+            consentError
+              ? "text-sm font-normal text-destructive"
+              : "text-sm font-normal text-muted-foreground"
+          }
+        >
           J&apos;accepte que mes données soient traitées conformément à la politique de
           confidentialité.
         </Label>
@@ -120,14 +140,14 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
 
       {error && <p className="w-full text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" size="lg" disabled={isSubmitting || !consent} className="mt-2 w-full">
+      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
         {isSubmitting ? "Création..." : "Créer mon compte"}
       </Button>
 
       <button
         type="button"
         onClick={onToggle}
-        className="mt-1 w-full text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        className="mt-1 w-full text-center text-xs/relaxed text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
       >
         Se connecter
       </button>

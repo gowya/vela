@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
-export function ResendVerificationButton() {
+export function ResendVerificationButton({ className }: { className?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   async function handleClick() {
@@ -12,7 +13,7 @@ export function ResendVerificationButton() {
   }
 
   if (status === "sent") {
-    return <span className="text-muted-foreground">Email renvoyé.</span>;
+    return <span className={className}>Email renvoyé.</span>;
   }
 
   return (
@@ -20,7 +21,7 @@ export function ResendVerificationButton() {
       type="button"
       onClick={handleClick}
       disabled={status === "sending"}
-      className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      className={cn("underline underline-offset-2 hover:opacity-70", className)}
     >
       {status === "sending" ? "Envoi..." : "Renvoyer l'email"}
     </button>

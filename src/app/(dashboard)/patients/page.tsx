@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { PatientsList } from "./PatientsList";
 
 export default function PatientsPage() {
-  return <PatientsList />;
+  return (
+    <Suspense>
+      <PatientsList />
+    </Suspense>
+  );
 }

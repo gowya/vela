@@ -33,6 +33,10 @@ export interface CustomFieldDefinition {
   practitionerId: string;
   fieldName: string;
   fieldType: CustomFieldType;
+  // Uniquement pour fieldType === "choice" : liste des options proposées.
+  options: string[] | null;
+  // Uniquement pertinent pour fieldType === "choice" : sélection unique ou multiple.
+  allowMultiple: boolean;
   createdAt: Date;
 }
 

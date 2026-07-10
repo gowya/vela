@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Patient } from "@/types";
 import { calculateAge, isBirthdaySoon } from "@/lib/patient-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { AddPatientDialog } from "./AddPatientDialog";
 import { PatientDetailDialog } from "./PatientDetailDialog";
+import { UsersIcon } from "@phosphor-icons/react";
 
 function formatDate(value: Date | string | null): string {
   if (!value) return "—";
@@ -13,9 +15,16 @@ function formatDate(value: Date | string | null): string {
 }
 
 export function PatientsList() {
+  const searchParams = useSearchParams();
   const [patients, setPatients] = useState<Patient[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
+    searchParams.get("patientId")
+  );
+  // Champ à ouvrir directement en édition quand on arrive depuis un lien externe
+  // (ex. "planifier le prochain rendez-vous" depuis le tableau de bord).
+  const autoEditField =
+    searchParams.get("edit") === "nextAppointmentAt" ? "nextAppointmentAt" : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +48,15 @@ export function PatientsList() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Patients</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-foreground">Patients</h1>
+          {patients !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              <UsersIcon size={14} />
+              {patients.length}
+            </span>
+          )}
+        </div>
         <AddPatientDialog
           onCreated={(patient) =>
             setPatients((previous) => [...(previous ?? []), patient])
@@ -98,7 +115,7 @@ export function PatientsList() {
                 <div className="flex flex-col items-end gap-1 text-sm">
                   <span className="text-foreground">{patient.status ?? "—"}</span>
                   <span className="text-muted-foreground">
-                    Prochain RDV : {formatDate(patient.nextAppointmentAt)}
+                    Prochain rendez-vous : {formatDate(patient.nextAppointmentAt)}
                   </span>
                 </div>
               </CardContent>
@@ -118,6 +135,7 @@ export function PatientsList() {
               ) ?? previous
           )
         }
+        autoEditField={selectedPatientId ? autoEditField : undefined}
       />
     </main>
   );

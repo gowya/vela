@@ -14,6 +14,56 @@ interface TodayAppointment {
   nextAppointmentAt: Date;
 }
 
+interface ActivationState {
+  patientCount: number;
+  consultationCount: number;
+  // Patient le plus récent. Utilisé pour pointer directement "Nouvelle
+  // consultation" vers lui tant qu'aucune consultation n'existe encore, et pour
+  // suggérer de planifier son prochain rendez-vous tant qu'aucun n'est prévu.
+  latestPatient: { id: string; firstName: string; hasNextAppointment: boolean } | null;
+}
+
+// État d'activation du compte : sert à distinguer "aucun rendez-vous
+// aujourd'hui, journée normale" (practicien déjà actif) de "compte vide,
+// jamais utilisé" (nouveau practicien). Les deux se ressemblent sinon.
+async function getActivationState(practitionerId: string): Promise<ActivationState> {
+  const { rows } = await pool.query<{ patient_count: string; consultation_count: string }>(
+    `SELECT
+       (SELECT COUNT(*) FROM patients WHERE practitioner_id = $1) AS patient_count,
+       (SELECT COUNT(*) FROM consultations c
+          JOIN patients p ON p.id = c.patient_id
+          WHERE p.practitioner_id = $1) AS consultation_count`,
+    [practitionerId]
+  );
+
+  const patientCount = Number(rows[0]?.patient_count ?? 0);
+  const consultationCount = Number(rows[0]?.consultation_count ?? 0);
+
+  let latestPatient: ActivationState["latestPatient"] = null;
+  if (patientCount > 0) {
+    const { rows: latestRows } = await pool.query<{
+      id: string;
+      first_name: string;
+      next_appointment_at: Date | null;
+    }>(
+      `SELECT id, first_name, next_appointment_at FROM patients
+       WHERE practitioner_id = $1
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [practitionerId]
+    );
+    if (latestRows[0]) {
+      latestPatient = {
+        id: latestRows[0].id,
+        firstName: latestRows[0].first_name,
+        hasNextAppointment: latestRows[0].next_appointment_at !== null,
+      };
+    }
+  }
+
+  return { patientCount, consultationCount, latestPatient };
+}
+
 // Les rendez-vous du jour sont dérivés de `next_appointment_at` sur la fiche
 // patient (il n'existe pas d'agenda séparé) : on compare en fuseau Europe/Paris
 // pour que "aujourd'hui" corresponde à la journée du praticien, quel que soit
@@ -54,47 +104,91 @@ export default async function Home() {
   const firstName = (session?.user?.name ?? session?.user?.email ?? "").split(" ")[0];
 
   const todayAppointments = practitionerId ? await getTodayAppointments(practitionerId) : [];
+  const activationState = practitionerId
+    ? await getActivationState(practitionerId)
+    : { patientCount: 0, consultationCount: 0, latestPatient: null };
   const now = new Date();
-  const today = new Date().toLocaleDateString("fr-FR", {
+  const today = now.toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+  const currentTime = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+  const hasNoPatients = activationState.patientCount === 0;
+  const hasNoConsultations = Boolean(
+    !hasNoPatients && activationState.consultationCount === 0 && activationState.latestPatient
+  );
+  // Une fois la première consultation faite, on suggère de planifier la suite
+  // tant que le patient le plus récent n'a pas de prochain rendez-vous prévu.
+  const needsAppointmentNudge = Boolean(
+    !hasNoPatients &&
+      !hasNoConsultations &&
+      todayAppointments.length === 0 &&
+      activationState.latestPatient &&
+      !activationState.latestPatient.hasNextAppointment
+  );
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-8">
       <header className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground [&::first-letter]:uppercase">{today}</p>
+        <p className="text-sm text-muted-foreground [&::first-letter]:uppercase">
+          {today}, {currentTime}
+        </p>
         <h1 className="font-display text-3xl text-foreground">
           Bonjour{firstName ? `, ${firstName}` : ""}
         </h1>
       </header>
 
-      <DashboardQuickActions />
+      <DashboardQuickActions
+        nudgeConsultationForPatient={hasNoConsultations ? activationState.latestPatient : null}
+      />
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <CalendarCheckIcon size={18} className="text-muted-foreground" />
-            Rendez-vous d&apos;aujourd&apos;hui
-          </h2>
-          {todayAppointments.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {todayAppointments.length}{" "}
-              {todayAppointments.length > 1 ? "rendez-vous" : "rendez-vous"}
-            </span>
-          )}
-        </div>
+      {hasNoPatients ? (
+        <Card>
+          <CardContent className="py-6 text-center text-sm text-muted-foreground">
+            Vous n&apos;avez pas encore de patient. Ajoutez-en un pour commencer.
+          </CardContent>
+        </Card>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <CalendarCheckIcon size={18} className="text-muted-foreground" />
+              Rendez-vous d&apos;aujourd&apos;hui
+            </h2>
+            {todayAppointments.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {todayAppointments.length}{" "}
+                {todayAppointments.length > 1 ? "rendez-vous" : "rendez-vous"}
+              </span>
+            )}
+          </div>
 
-        {todayAppointments.length === 0 ? (
-          <Card>
-            <CardContent className="py-6 text-center text-sm text-muted-foreground">
-              Aucun rendez-vous aujourd&apos;hui.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {todayAppointments.map((appointment) => {
+          {todayAppointments.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
+                {hasNoConsultations && activationState.latestPatient ? (
+                  <p>Ajoutez votre première consultation pour {activationState.latestPatient.firstName}.</p>
+                ) : needsAppointmentNudge && activationState.latestPatient ? (
+                  <>
+                    <p>Aucun rendez-vous aujourd&apos;hui.</p>
+                    <Link
+                      href={`/patients?patientId=${activationState.latestPatient.id}&edit=nextAppointmentAt`}
+                      className="text-primary hover:underline"
+                    >
+                      Planifier le prochain rendez-vous de{" "}
+                      {activationState.latestPatient.firstName}
+                    </Link>
+                  </>
+                ) : (
+                  <p>Aucun rendez-vous aujourd&apos;hui.</p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {todayAppointments.map((appointment) => {
               const isPast = new Date(appointment.nextAppointmentAt) < now;
 
               return (
@@ -123,8 +217,9 @@ export default async function Home() {
               );
             })}
           </div>
-        )}
-      </section>
+          )}
+        </section>
+      )}
     </main>
   );
 }

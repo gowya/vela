@@ -54,7 +54,7 @@ export function ConsultationsList() {
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Suivi consultations</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Consultations</h1>
         <div className="flex items-center gap-2">
           <TemplatesManagerDialog />
           <NewConsultationDialog />

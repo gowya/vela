@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BetaNoticeDialog } from "@/components/BetaNoticeDialog";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import pool from "@/lib/db";
 
 export default async function DashboardLayout({
@@ -17,7 +18,7 @@ export default async function DashboardLayout({
   }
 
   const { rows } = await pool.query(
-    `SELECT onboarding_completed_at, beta_notice_dismissed_at,
+    `SELECT onboarding_completed_at, beta_notice_dismissed_at, email_verified_at,
             dashboard_visits_count + 1 AS dashboard_visits_count
      FROM practitioners WHERE id = $1`,
     [session.user.id]
@@ -40,7 +41,10 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <AppSidebar userName={userName} />
-      <div className="flex-1">{children}</div>
+      <div className="flex-1">
+        {!profile.email_verified_at && <EmailVerificationBanner />}
+        {children}
+      </div>
       <BetaNoticeDialog initialOpen={showBetaNotice} />
     </div>
   );

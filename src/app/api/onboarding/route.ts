@@ -8,7 +8,6 @@ import { SPECIALTY_VALUES } from "@/lib/specialties";
 const onboardingSchema = z.object({
   firstName: z.string().trim().min(1, "Le prénom est requis.").max(80),
   lastName: z.string().trim().min(1, "Le nom est requis.").max(80),
-  phone: z.string().trim().max(30).optional(),
   specialty: z.enum(SPECIALTY_VALUES, {
     errorMap: () => ({ message: "Sélectionnez une spécialité." }),
   }),
@@ -31,13 +30,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { firstName, lastName, phone, specialty } = parsed.data;
+  const { firstName, lastName, specialty } = parsed.data;
 
   await pool.query(
     `UPDATE practitioners
-     SET first_name = $1, last_name = $2, phone = $3, specialty = $4, onboarding_completed_at = now()
-     WHERE id = $5`,
-    [firstName, lastName, phone || null, specialty, session.user.id]
+     SET first_name = $1, last_name = $2, specialty = $3, onboarding_completed_at = now()
+     WHERE id = $4`,
+    [firstName, lastName, specialty, session.user.id]
   );
 
   return NextResponse.json({ ok: true });

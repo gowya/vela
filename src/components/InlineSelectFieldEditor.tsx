@@ -85,7 +85,11 @@ export function InlineSelectFieldEditor({
       <div className="group flex items-center gap-2">
         {isEditing ? (
           <>
-            <Select value={draftValue} onValueChange={(value) => setDraftValue(value ?? "")}>
+            <Select
+              items={Object.fromEntries(options.map((option) => [option.value, option.label]))}
+              value={draftValue}
+              onValueChange={(value) => setDraftValue(value ?? "")}
+            >
               <SelectTrigger aria-label={`Modifier ${label.toLowerCase()}`}>
                 <SelectValue placeholder={placeholder} />
               </SelectTrigger>

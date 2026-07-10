@@ -9,11 +9,15 @@ import { InlineTextFieldEditor } from "@/components/InlineTextFieldEditor";
 import { InlineSelectFieldEditor } from "@/components/InlineSelectFieldEditor";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ResendVerificationButton } from "@/components/ResendVerificationButton";
 import { SPECIALTIES } from "@/lib/specialties";
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ verification?: string }>;
+}) {
   const session = await getServerSession(authOptions);
+  const { verification } = await searchParams;
 
   const { rows } = await pool.query(
     `SELECT first_name, last_name, phone, specialty, email, email_verified_at
@@ -26,10 +30,14 @@ export default async function AccountPage() {
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
       <h1 className="text-2xl font-semibold text-foreground">Compte</h1>
 
+      {verification === "success" && (
+        <p className="text-sm text-foreground">Adresse confirmée.</p>
+      )}
+
       <Tabs defaultValue="profil">
         <TabsList>
           <TabsTrigger value="profil">Profil</TabsTrigger>
-          <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          <TabsTrigger value="feedback">Retours</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profil" className="mt-4">
@@ -38,15 +46,7 @@ export default async function AccountPage() {
               <CardTitle>
                 {[profile.first_name, profile.last_name].filter(Boolean).join(" ") || "—"}
               </CardTitle>
-              <CardDescription className="flex flex-col gap-1">
-                <span>{profile.email}</span>
-                {!profile.email_verified_at && (
-                  <span className="flex items-center gap-2 text-xs">
-                    Adresse non confirmée.
-                    <ResendVerificationButton />
-                  </span>
-                )}
-              </CardDescription>
+              <CardDescription>{profile.email}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div>
@@ -78,6 +78,8 @@ export default async function AccountPage() {
                   minLength={0}
                   maxLength={30}
                   placeholder="Non renseigné"
+                  type="tel"
+                  inputMode="tel"
                 />
               </div>
               <div>
@@ -105,7 +107,7 @@ export default async function AccountPage() {
         <TabsContent value="feedback" className="mt-4">
           <Card className="max-w-lg">
             <CardHeader>
-              <CardTitle>Feedback</CardTitle>
+              <CardTitle>Retours</CardTitle>
               <CardDescription>
                 Vela est en version bêta. Vos retours nous aident à l&apos;ajuster au plus près de
                 votre pratique.

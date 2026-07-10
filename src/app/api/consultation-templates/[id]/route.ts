@@ -24,7 +24,7 @@ export async function GET(
   );
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: "Template introuvable." }, { status: 404 });
+    return NextResponse.json({ error: "Modèle introuvable." }, { status: 404 });
   }
 
   return NextResponse.json({ template: mapConsultationTemplateRow(rows[0]) });
@@ -66,7 +66,7 @@ export async function PATCH(
   );
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: "Template introuvable." }, { status: 404 });
+    return NextResponse.json({ error: "Modèle introuvable." }, { status: 404 });
   }
 
   return NextResponse.json({ template: mapConsultationTemplateRow(rows[0]) });
@@ -89,7 +89,7 @@ export async function DELETE(
   );
 
   if (rowCount === 0) {
-    return NextResponse.json({ error: "Template introuvable." }, { status: 404 });
+    return NextResponse.json({ error: "Modèle introuvable." }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

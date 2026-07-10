@@ -52,6 +52,8 @@ export function mapCustomFieldDefinitionRow(row: {
   practitioner_id: string;
   field_name: string;
   field_type: string;
+  options: string[] | null;
+  allow_multiple: boolean;
   created_at: Date;
 }): CustomFieldDefinition {
   return {
@@ -59,6 +61,8 @@ export function mapCustomFieldDefinitionRow(row: {
     practitionerId: row.practitioner_id,
     fieldName: row.field_name,
     fieldType: row.field_type as CustomFieldDefinition["fieldType"],
+    options: row.options,
+    allowMultiple: row.allow_multiple,
     createdAt: row.created_at,
   };
 }

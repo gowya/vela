@@ -58,10 +58,22 @@ export const patientUpdateSchema = patientCreateSchema.partial();
 
 export const customFieldTypeSchema = z.enum(["text", "choice", "date", "number"]);
 
-export const customFieldDefinitionCreateSchema = z.object({
-  fieldName: z.string().trim().min(1, "Le nom du champ est requis."),
-  fieldType: customFieldTypeSchema,
-});
+export const customFieldDefinitionCreateSchema = z
+  .object({
+    fieldName: z.string().trim().min(1, "Le nom du champ est requis."),
+    fieldType: customFieldTypeSchema,
+    options: z.array(z.string().trim().min(1)).optional().default([]),
+    allowMultiple: z.boolean().optional().default(false),
+  })
+  .refine(
+    (data) => data.fieldType !== "choice" || data.options.length >= 2,
+    { message: "Un champ à choix nécessite au moins deux options.", path: ["options"] }
+  )
+  .transform((data) => ({
+    ...data,
+    options: data.fieldType === "choice" ? data.options : [],
+    allowMultiple: data.fieldType === "choice" ? data.allowMultiple : false,
+  }));
 
 // --- Consultations & templates ---
 // Le contenu est un document Tiptap/ProseMirror (éditeur riche façon Notion :
@@ -111,20 +123,20 @@ export const consultationContentSchema = z
 // construire à l'avance.
 
 export const consultationTemplateCreateSchema = z.object({
-  name: z.string().trim().min(1, "Le nom du template est requis."),
+  name: z.string().trim().min(1, "Le nom du modèle est requis."),
   title: optionalTrimmedString,
   content: consultationContentSchema,
 });
 
 export const consultationTemplateUpdateSchema = z.object({
-  name: z.string().trim().min(1, "Le nom du template est requis.").optional(),
+  name: z.string().trim().min(1, "Le nom du modèle est requis.").optional(),
 });
 
 // --- Consultations ---
 
 export const consultationCreateSchema = z.object({
   patientId: z.string().uuid("Patient invalide."),
-  templateId: z.string().uuid("Template invalide.").nullable().optional(),
+  templateId: z.string().uuid("Modèle invalide.").nullable().optional(),
   title: optionalTrimmedString,
   date: optionalDateTime,
   content: consultationContentSchema,

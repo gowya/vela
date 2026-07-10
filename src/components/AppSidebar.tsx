@@ -12,7 +12,7 @@ interface AppSidebarProps {
 const navItems = [
   { href: "/", label: "Tableau de bord", icon: HouseIcon },
   { href: "/patients", label: "Patients", icon: UsersIcon },
-  { href: "/consultations", label: "Suivi consultations", icon: ClipboardTextIcon },
+  { href: "/consultations", label: "Consultations", icon: ClipboardTextIcon },
 ];
 
 function getInitials(name: string): string {

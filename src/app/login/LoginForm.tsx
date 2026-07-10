@@ -77,7 +77,7 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
       <button
         type="button"
         onClick={onToggle}
-        className="mt-1 w-full text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        className="mt-1 w-full text-center text-xs/relaxed text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
       >
         Créer un compte
       </button>

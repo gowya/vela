@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       [templateId, session.user.id]
     );
     if (templateRows.length === 0) {
-      return NextResponse.json({ error: "Template introuvable." }, { status: 422 });
+      return NextResponse.json({ error: "Modèle introuvable." }, { status: 422 });
     }
   }
 

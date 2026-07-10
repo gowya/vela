@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type HTMLInputTypeAttribute, type InputHTMLAttributes } from "react";
 import { PencilSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sanitizePhoneInput } from "@/lib/phone";
 
 type InlineTextFieldEditorProps = {
   field: string;
@@ -13,6 +14,8 @@ type InlineTextFieldEditorProps = {
   maxLength?: number;
   placeholder?: string;
   className?: string;
+  type?: HTMLInputTypeAttribute;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
 };
 
 export function InlineTextFieldEditor({
@@ -23,6 +26,8 @@ export function InlineTextFieldEditor({
   maxLength = 80,
   placeholder,
   className,
+  type,
+  inputMode,
 }: InlineTextFieldEditorProps) {
   const [value, setValue] = useState(initialValue);
   const [draftValue, setDraftValue] = useState(initialValue);
@@ -100,9 +105,15 @@ export function InlineTextFieldEditor({
           <>
             <Input
               ref={inputRef}
+              type={type}
+              inputMode={inputMode}
               value={draftValue}
               placeholder={placeholder}
-              onChange={(event) => setDraftValue(event.target.value)}
+              onChange={(event) => {
+                const nextValue =
+                  type === "tel" ? sanitizePhoneInput(event.target.value) : event.target.value;
+                setDraftValue(nextValue);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
