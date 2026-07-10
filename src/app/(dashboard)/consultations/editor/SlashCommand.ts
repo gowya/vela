@@ -15,10 +15,13 @@ export interface SlashCommandOptions {
   // La pièce jointe s'insère de façon asynchrone (upload) ; l'item "/" ne fait que
   // déclencher le sélecteur de fichier de TiptapEditor, câblé via cette option.
   onAttachmentRequest: () => void;
+  // Masque l'item "Pièce jointe" là où l'upload n'a pas de cible (ex. éditeur de
+  // modèle : pas de consultation à laquelle rattacher le fichier).
+  includeAttachment: boolean;
 }
 
 function buildItems(options: SlashCommandOptions): SlashCommandItem[] {
-  return [
+  const items: SlashCommandItem[] = [
     {
       title: "Titre 1",
       icon: TextHOneIcon,
@@ -49,15 +52,20 @@ function buildItems(options: SlashCommandOptions): SlashCommandItem[] {
       command: ({ editor, range }) =>
         editor.chain().focus().deleteRange(range).toggleTaskList().run(),
     },
-    {
+  ];
+
+  if (options.includeAttachment) {
+    items.push({
       title: "Pièce jointe",
       icon: PaperclipIcon,
       command: ({ editor, range }) => {
         editor.chain().focus().deleteRange(range).run();
         options.onAttachmentRequest();
       },
-    },
-  ];
+    });
+  }
+
+  return items;
 }
 
 export const SlashCommand = Extension.create<SlashCommandOptions>({
@@ -66,6 +74,7 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
   addOptions() {
     return {
       onAttachmentRequest: () => undefined,
+      includeAttachment: true,
     };
   },
 

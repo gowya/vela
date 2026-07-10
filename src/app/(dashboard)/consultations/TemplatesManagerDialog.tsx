@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
-import type { ConsultationTemplate } from "@/types";
+import { useRouter } from "next/navigation";
+import { DotsThreeIcon, PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
+import type { ConsultationTemplate, Patient } from "@/types";
+import { deriveContentText } from "@/lib/consultation-utils";
 import {
   Dialog,
   DialogContent,
@@ -12,21 +14,47 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export function TemplatesManagerDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [templates, setTemplates] = useState<ConsultationTemplate[] | null>(null);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState<ConsultationTemplate | null>(null);
+
+  // Modèle pour lequel on est en train de choisir un patient afin de démarrer une
+  // consultation (une consultation exige un patient). Un seul picker partagé.
+  const [usingTemplate, setUsingTemplate] = useState<ConsultationTemplate | null>(null);
+  const [patients, setPatients] = useState<Patient[] | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [pickError, setPickError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     loadTemplates();
   }, [open]);
+
+  useEffect(() => {
+    if (!usingTemplate) return;
+    setSelectedPatientId("");
+    setPickError(null);
+    fetch("/api/patients")
+      .then((response) => response.json())
+      .then((data) => setPatients(data.patients ?? []));
+  }, [usingTemplate]);
 
   function loadTemplates() {
     fetch("/api/consultation-templates")
@@ -34,33 +62,21 @@ export function TemplatesManagerDialog() {
       .then((data) => setTemplates(data.templates ?? []));
   }
 
-  function startRename(template: ConsultationTemplate) {
-    setError(null);
-    setRenamingId(template.id);
-    setRenameValue(template.name);
+  function openTemplateEditor(templateId: string) {
+    setOpen(false);
+    router.push(`/consultations/models/${templateId}`);
   }
 
-  async function confirmRename() {
-    if (!renamingId) return;
-    if (!renameValue.trim()) {
-      setError("Le nom du modèle est requis.");
+  function startConsultationFromTemplate() {
+    if (!usingTemplate) return;
+    if (!selectedPatientId) {
+      setPickError("Choisissez un patient.");
       return;
     }
-
-    const response = await fetch(`/api/consultation-templates/${renamingId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: renameValue.trim() }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      setError(data?.error ?? "Le renommage a échoué.");
-      return;
-    }
-
-    setRenamingId(null);
-    loadTemplates();
+    const templateId = usingTemplate.id;
+    setUsingTemplate(null);
+    setOpen(false);
+    router.push(`/consultations/new?patientId=${selectedPatientId}&templateId=${templateId}`);
   }
 
   async function confirmDelete() {
@@ -79,78 +95,145 @@ export function TemplatesManagerDialog() {
             <DialogTitle>Modèles de consultation</DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
             {templates === null && (
               <p className="text-sm text-muted-foreground">Chargement…</p>
             )}
 
             {templates?.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Aucun modèle pour le moment. Depuis une consultation, utilisez
-                « Enregistrer comme modèle » pour en créer un.
+                Aucun modèle pour le moment. Créez-en un ci-dessous, ou depuis une
+                consultation via « Enregistrer comme modèle ».
               </p>
             )}
 
-            {templates?.map((template) => (
-              <div
-                key={template.id}
-                className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm"
-              >
-                {renamingId === template.id ? (
-                  <Input
-                    value={renameValue}
-                    onChange={(event) => setRenameValue(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") confirmRename();
-                      if (event.key === "Escape") setRenamingId(null);
-                    }}
-                    autoFocus
-                    className="h-6"
-                  />
-                ) : (
+            {templates?.map((template) => {
+              const preview = deriveContentText(template.content).replace(/\s+/g, " ").trim();
+              return (
+                <div
+                  key={template.id}
+                  className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm"
+                >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-foreground">{template.name}</p>
-                    {template.title && (
-                      <p className="truncate text-xs text-muted-foreground">{template.title}</p>
+                    {preview && (
+                      <p className="truncate text-xs text-muted-foreground">{preview}</p>
                     )}
                   </div>
-                )}
 
-                <div className="flex shrink-0 items-center gap-1">
-                  {renamingId === template.id ? (
-                    <Button type="button" variant="ghost" size="sm" onClick={confirmRename}>
-                      Valider
-                    </Button>
-                  ) : (
+                  <div className="flex shrink-0 items-center gap-1">
+                    {/* Action reine : démarrer une consultation à partir de ce modèle
+                        (choix du patient puis éditeur pré-rempli avec le modèle). */}
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Renommer"
-                      onClick={() => startRename(template)}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setUsingTemplate(template)}
                     >
-                      <PencilSimpleIcon size={14} />
+                      Nouvelle consultation
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Supprimer"
-                    onClick={() => setDeletingTemplate(template)}
-                  >
-                    <TrashIcon size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Plus d'actions"
+                          />
+                        }
+                      >
+                        <DotsThreeIcon size={18} weight="bold" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openTemplateEditor(template.id)}>
+                          <PencilSimpleIcon size={14} />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeletingTemplate(template)}
+                        >
+                          <TrashIcon size={14} />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Un modèle n'est rattaché à aucun patient : on ouvre un éditeur de
+                modèle dédié plutôt que le flux consultation (qui exige un patient). */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setOpen(false);
+                router.push("/consultations/models/new");
+              }}
+            >
+              Créer un modèle
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deletingTemplate !== null} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
+      {/* Picker patient partagé : démarrer une consultation depuis le modèle choisi. */}
+      <Dialog
+        open={usingTemplate !== null}
+        onOpenChange={(nextOpen) => !nextOpen && setUsingTemplate(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nouvelle consultation</DialogTitle>
+            {usingTemplate && (
+              <DialogDescription>À partir du modèle « {usingTemplate.name} »</DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground">Patient</p>
+            <Select
+              items={Object.fromEntries(
+                (patients ?? []).map((patient) => [
+                  patient.id,
+                  `${patient.firstName} ${patient.lastName}`,
+                ])
+              )}
+              value={selectedPatientId}
+              onValueChange={(value) => setSelectedPatientId(value ?? "")}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choisir un patient" />
+              </SelectTrigger>
+              <SelectContent>
+                {patients?.map((patient) => (
+                  <SelectItem key={patient.id} value={patient.id}>
+                    {patient.firstName} {patient.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {pickError && <p className="text-sm text-destructive">{pickError}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" onClick={startConsultationFromTemplate}>
+              Commencer la consultation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingTemplate !== null}
+        onOpenChange={(nextOpen) => !nextOpen && setDeletingTemplate(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Supprimer ce modèle ?</DialogTitle>

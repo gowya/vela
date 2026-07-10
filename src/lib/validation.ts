@@ -130,6 +130,7 @@ export const consultationTemplateCreateSchema = z.object({
 
 export const consultationTemplateUpdateSchema = z.object({
   name: z.string().trim().min(1, "Le nom du modèle est requis.").optional(),
+  content: consultationContentSchema.optional(),
 });
 
 // --- Consultations ---

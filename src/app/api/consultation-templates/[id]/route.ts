@@ -52,17 +52,31 @@ export async function PATCH(
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { name } = parsed.data;
-  if (name === undefined) {
+  const { name, content } = parsed.data;
+  if (name === undefined && content === undefined) {
     return NextResponse.json({ error: "Aucune modification fournie." }, { status: 400 });
   }
 
+  // Mise à jour partielle : on ne touche qu'aux colonnes réellement fournies, ce
+  // qui permet à l'autosave d'envoyer name seul, content seul, ou les deux.
+  const updates: string[] = [];
+  const values: unknown[] = [];
+  if (name !== undefined) {
+    values.push(name);
+    updates.push(`name = $${values.length}`);
+  }
+  if (content !== undefined) {
+    values.push(JSON.stringify(content));
+    updates.push(`content = $${values.length}`);
+  }
+  values.push(id, session.user.id);
+
   const { rows } = await pool.query(
     `UPDATE consultation_templates
-     SET name = $1
-     WHERE id = $2 AND practitioner_id = $3
+     SET ${updates.join(", ")}
+     WHERE id = $${values.length - 1} AND practitioner_id = $${values.length}
      RETURNING id, practitioner_id, name, title, content, created_at`,
-    [name, id, session.user.id]
+    values
   );
 
   if (rows.length === 0) {

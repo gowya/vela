@@ -35,10 +35,16 @@ interface TiptapEditorProps {
   onChange: (content: ConsultationContent) => void;
   ensureConsultationId: () => Promise<string>;
   consultationId: string | null;
+  // Les pièces jointes se rattachent à une consultation (clé étrangère) : on les
+  // désactive dans les contextes qui n'en ont pas, comme l'éditeur de modèle.
+  allowAttachments?: boolean;
 }
 
 export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
-  function TiptapEditor({ content, onChange, ensureConsultationId, consultationId }, ref) {
+  function TiptapEditor(
+    { content, onChange, ensureConsultationId, consultationId, allowAttachments = true },
+    ref
+  ) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const consultationIdRef = useRef<string | null>(consultationId);
     consultationIdRef.current = consultationId;
@@ -64,6 +70,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
         Attachment.configure({ getConsultationId: () => consultationIdRef.current }),
         SlashCommand.configure({
           onAttachmentRequest: () => fileInputRef.current?.click(),
+          includeAttachment: allowAttachments,
         }),
       ],
       content,
@@ -100,6 +107,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
     }));
 
     async function uploadAndInsertFile(file: File) {
+      if (!allowAttachments) return;
       setUploadError(null);
 
       if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
@@ -146,25 +154,27 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     return (
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="gap-1 text-muted-foreground"
-          >
-            <PaperclipIcon size={12} />
-            Joindre un fichier
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            hidden
-            onChange={handleFileInputChange}
-            accept={Array.from(ALLOWED_ATTACHMENT_MIME_TYPES).join(",")}
-          />
-        </div>
+        {allowAttachments && (
+          <div className="flex items-center justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-1 text-muted-foreground"
+            >
+              <PaperclipIcon size={12} />
+              Joindre un fichier
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              hidden
+              onChange={handleFileInputChange}
+              accept={Array.from(ALLOWED_ATTACHMENT_MIME_TYPES).join(",")}
+            />
+          </div>
+        )}
 
         {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
 

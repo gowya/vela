@@ -58,7 +58,6 @@ export function ConsultationEditor({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<ConsultationContent>(EMPTY_CONSULTATION_CONTENT);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(templateId);
-  const [templateName, setTemplateName] = useState<string | null>(null);
   const [availableTemplates, setAvailableTemplates] = useState<ConsultationTemplate[] | null>(
     null
   );
@@ -131,7 +130,13 @@ export function ConsultationEditor({
           fetch(`/api/consultation-templates/${templateId}`)
             .then((response) => response.json())
             .then((data) => {
-              if (!cancelled) setTemplateName(data.template?.name ?? null);
+              if (cancelled || !data.template) return;
+              // Brouillon démarré depuis un modèle (jamais un existant) : on
+              // pré-remplit le titre et le contenu à partir du modèle.
+              if (!consultationId) {
+                setTitle(data.template.title ?? "");
+                setContent(data.template.content);
+              }
             })
         );
       }
@@ -301,7 +306,6 @@ export function ConsultationEditor({
     if (!found) return;
 
     setSelectedTemplateId(found.id);
-    setTemplateName(found.name);
     setTitle(found.title ?? "");
     setContent(found.content);
     editorRef.current?.setContent(found.content);
@@ -413,11 +417,6 @@ export function ConsultationEditor({
           <span>
             {patient.firstName} {patient.lastName}
           </span>
-          {templateName && (
-            <span className="rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground">
-              {templateName}
-            </span>
-          )}
         </div>
       )}
 
