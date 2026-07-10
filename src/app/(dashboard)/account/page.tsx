@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { InlineTextFieldEditor } from "@/components/InlineTextFieldEditor";
 import { InlineSelectFieldEditor } from "@/components/InlineSelectFieldEditor";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SPECIALTIES } from "@/lib/specialties";
 
@@ -100,6 +101,20 @@ export default async function AccountPage({
                   <ThemeToggle />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6 max-w-lg border-destructive/30">
+            <CardHeader>
+              <CardTitle>Zone dangereuse</CardTitle>
+              <CardDescription>
+                La suppression de votre compte est définitive : votre profil, vos patients, vos
+                consultations et tous les documents associés seront effacés sans possibilité de
+                récupération.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeleteAccountDialog />
             </CardContent>
           </Card>
         </TabsContent>
