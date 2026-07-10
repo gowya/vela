@@ -132,9 +132,10 @@ export function ConsultationEditor({
             .then((data) => {
               if (cancelled || !data.template) return;
               // Brouillon démarré depuis un modèle (jamais un existant) : on
-              // pré-remplit le titre et le contenu à partir du modèle.
+              // pré-remplit uniquement le contenu. Le titre reste au praticien —
+              // le renseigner avec le nom du modèle ferait doublon avec l'info
+              // de modèle déjà affichée dans la liste des consultations.
               if (!consultationId) {
-                setTitle(data.template.title ?? "");
                 setContent(data.template.content);
               }
             })
