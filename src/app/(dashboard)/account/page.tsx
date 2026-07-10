@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { InlineTextFieldEditor } from "@/components/InlineTextFieldEditor";
 import { InlineSelectFieldEditor } from "@/components/InlineSelectFieldEditor";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SPECIALTIES } from "@/lib/specialties";
 
@@ -25,6 +26,17 @@ export default async function AccountPage({
     [session?.user?.id]
   );
   const profile = rows[0] ?? {};
+
+  const { rows: countRows } = await pool.query(
+    `SELECT
+       (SELECT COUNT(*) FROM patients WHERE practitioner_id = $1) AS patients_count,
+       (SELECT COUNT(*) FROM consultations c
+          JOIN patients p ON p.id = c.patient_id
+          WHERE p.practitioner_id = $1 AND c.deleted_at IS NULL) AS consultations_count`,
+    [session?.user?.id]
+  );
+  const patientsCount = Number(countRows[0]?.patients_count ?? 0);
+  const consultationsCount = Number(countRows[0]?.consultations_count ?? 0);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
@@ -100,6 +112,23 @@ export default async function AccountPage({
                   <ThemeToggle />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6 max-w-lg border-destructive/30">
+            <CardHeader>
+              <CardTitle>Zone dangereuse</CardTitle>
+              <CardDescription>
+                La suppression de votre compte est définitive : votre profil, vos patients, vos
+                consultations et tous les documents associés seront effacés sans possibilité de
+                récupération.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeleteAccountDialog
+                patientsCount={patientsCount}
+                consultationsCount={consultationsCount}
+              />
             </CardContent>
           </Card>
         </TabsContent>
