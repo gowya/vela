@@ -114,3 +114,12 @@ CREATE INDEX idx_feedback_practitioner ON feedback(practitioner_id);
 -- dès la toute première arrivée post-onboarding (retour revue Karen).
 ALTER TABLE practitioners
   ADD COLUMN dashboard_visits_count INTEGER NOT NULL DEFAULT 0;
+
+-- Motif de départ à la suppression de compte, anonyme (pas de practitioner_id)
+-- pour permettre l'analyse des raisons de churn sans conserver de PII après
+-- suppression définitive du compte (retour revue Karen).
+CREATE TABLE account_deletion_feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

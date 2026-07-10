@@ -27,6 +27,17 @@ export default async function AccountPage({
   );
   const profile = rows[0] ?? {};
 
+  const { rows: countRows } = await pool.query(
+    `SELECT
+       (SELECT COUNT(*) FROM patients WHERE practitioner_id = $1) AS patients_count,
+       (SELECT COUNT(*) FROM consultations c
+          JOIN patients p ON p.id = c.patient_id
+          WHERE p.practitioner_id = $1 AND c.deleted_at IS NULL) AS consultations_count`,
+    [session?.user?.id]
+  );
+  const patientsCount = Number(countRows[0]?.patients_count ?? 0);
+  const consultationsCount = Number(countRows[0]?.consultations_count ?? 0);
+
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
       <h1 className="text-2xl font-semibold text-foreground">Compte</h1>
@@ -114,7 +125,10 @@ export default async function AccountPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DeleteAccountDialog />
+              <DeleteAccountDialog
+                patientsCount={patientsCount}
+                consultationsCount={consultationsCount}
+              />
             </CardContent>
           </Card>
         </TabsContent>
