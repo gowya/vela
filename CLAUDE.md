@@ -35,9 +35,13 @@ soin-app/
  ├── claude/                # Documentation détaillée pour Claude
  │   ├── architecture.md
  │   ├── coding_conventions.md
+ │   ├── testing_strategy.md
  │   └── ui_guidelines.md
  ├── package.json
  ├── components.json        # Config shadcn/ui
+ ├── docker-compose.test.yml # Postgres jetable pour les tests d'intégration
+ ├── scripts/
+ │   └── setup-test-db.mjs  # Reconstruit le schéma de test (schema.sql + migrations)
  ├── src/
  │   ├── app/                # Routes (App Router) : pages, layouts, API
  │   │   ├── api/            # Routes API (auth, signup)
@@ -46,6 +50,8 @@ soin-app/
  │   │   └── ui/             # Composants UI réutilisables (Button, Card, Input, Logo)
  │   ├── lib/                # Logique serveur : auth, connexion DB, schéma SQL
  │   └── types/              # Déclarations de types partagées
+ ├── tests/
+ │   └── integration/        # Tests des routes API contre un vrai Postgres de test
  ├── public/                 # Assets statiques (logo, images)
  ├── vela-brand-book.md      # Identité de marque complète
  └── vela-moodboard.html     # Moodboard visuel de la marque
@@ -57,9 +63,10 @@ soin-app/
 - `npm run build` — build de production
 - `npm run start` — démarre le serveur en mode production
 - `npm run lint` — vérifie le code avec ESLint
+- `npm run test` — lance toute la suite de tests (unitaires + intégration, nécessite `npm run test:db:up` au préalable)
 
 # Important Rules
 
 - **Performance** : pas d'animation décorative, uniquement des transitions fonctionnelles (ouverture de dossier, sauvegarde). Privilégier le rendu serveur quand c'est possible pour limiter le JS envoyé au client.
 - **Accessibilité** : contrastes suffisants (respecter la palette de marque, jamais de texte gris clair sur fond clair), labels explicites sur tous les champs de formulaire, navigation clavier fonctionnelle, composants ShadCN/Radix à privilégier pour l'accessibilité de base.
-- **Testing** : aucune stratégie de test automatisé n'est en place actuellement. À définir avant l'ajout de fonctionnalités critiques (tests unitaires sur la logique d'auth et d'accès aux données patients en priorité).
+- **Testing** : suite de tests unitaires (`src/**/*.test.ts`) + intégration (`tests/integration/`) contre un Postgres jetable, lancée en CI sur chaque push/PR. Voir `claude/testing_strategy.md` pour la philosophie, les commandes et les conventions d'écriture des tests.

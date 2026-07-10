@@ -1,0 +1,50 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Mêmes identifiants que docker-compose.test.yml (voir vitest.integration.config.ts) :
+    # aucune configuration différente entre local et CI.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: soin_app_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d soin_app_test"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Valeurs factices : le build ne se connecte pas réellement à la base.
+          DATABASE_URL: postgresql://test:test@localhost:5433/soin_app_test
+          NEXTAUTH_SECRET: ci-build-secret
+
+      - run: npm run test:unit
+
+      - run: npm run test:integration
