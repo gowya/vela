@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +33,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Posé par middleware.ts sur chaque requête : requis pour que ce script
+  // inline passe la CSP stricte (script-src limité au nonce, sans 'unsafe-inline').
+  const nonce = headers().get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="fr"
@@ -39,6 +45,7 @@ export default function RootLayout({
     >
       <head>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `try {
               var theme = localStorage.getItem("theme");
@@ -51,6 +58,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans" suppressHydrationWarning>
         {children}
+        <Analytics />
       </body>
     </html>
   );

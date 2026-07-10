@@ -7,6 +7,10 @@ import pool from "@/lib/db";
 import { buildAccountExport } from "@/lib/accountExport";
 import { sendAccountDeletionEmail } from "@/lib/email";
 import { ACCOUNT_DELETION_REASONS } from "@/lib/accountDeletionReasons";
+import { consumeRateLimit } from "@/lib/rateLimit";
+
+const DELETE_ATTEMPT_LIMIT = 5;
+const DELETE_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 
 const deleteAccountSchema = z.object({
   password: z.string().min(1, "Le mot de passe est requis."),
@@ -30,6 +34,18 @@ export async function DELETE(request: Request) {
   if (!parsed.success) {
     const message = parsed.error.issues[0]?.message ?? "Données invalides.";
     return NextResponse.json({ error: message }, { status: 422 });
+  }
+
+  const allowed = await consumeRateLimit({
+    key: `delete-account:${session.user.id}`,
+    limit: DELETE_ATTEMPT_LIMIT,
+    windowMs: DELETE_ATTEMPT_WINDOW_MS,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Trop de tentatives. Réessayez plus tard." },
+      { status: 429 }
+    );
   }
 
   const { rows } = await pool.query(

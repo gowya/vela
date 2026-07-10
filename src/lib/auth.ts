@@ -2,6 +2,10 @@ import { type AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
+import { consumeRateLimit } from "@/lib/rateLimit";
+
+const LOGIN_ATTEMPT_LIMIT = 5;
+const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 
 export const authOptions: AuthOptions = {
   session: { strategy: "jwt" },
@@ -17,6 +21,17 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        // Limite par email plutôt que par IP : bloque le brute-force ciblé sur
+        // un compte donné même depuis des IP différentes (botnet, VPN...).
+        const allowed = await consumeRateLimit({
+          key: `login:${credentials.email.toLowerCase()}`,
+          limit: LOGIN_ATTEMPT_LIMIT,
+          windowMs: LOGIN_ATTEMPT_WINDOW_MS,
+        });
+        if (!allowed) {
           return null;
         }
 

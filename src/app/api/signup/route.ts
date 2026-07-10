@@ -4,10 +4,15 @@ import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
 import { generateVerificationToken, VERIFICATION_TOKEN_TTL_MS } from "@/lib/verification-token";
+import { consumeRateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/request-ip";
+
+const SIGNUP_ATTEMPT_LIMIT = 5;
+const SIGNUP_ATTEMPT_WINDOW_MS = 60 * 60 * 1000;
 
 const signupSchema = z.object({
   email: z.string().trim().toLowerCase().email("Email invalide."),
-  password: z.string().min(8, "8 caractères minimum."),
+  password: z.string().min(10, "10 caractères minimum."),
   // Consentement RGPD requis pour la création du compte.
   consent: z.literal(true, {
     errorMap: () => ({
@@ -17,6 +22,20 @@ const signupSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Par IP plutôt que par email : ralentit à la fois la création de masse de
+  // comptes et l'énumération d'emails existants via la réponse 409 ci-dessous.
+  const allowed = await consumeRateLimit({
+    key: `signup:${getClientIp(request)}`,
+    limit: SIGNUP_ATTEMPT_LIMIT,
+    windowMs: SIGNUP_ATTEMPT_WINDOW_MS,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Trop de tentatives. Réessayez plus tard." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json().catch(() => null);
   if (!body) {
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
