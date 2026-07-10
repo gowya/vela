@@ -28,14 +28,14 @@ export const metadata: Metadata = {
   description: "Gestion de patientèle et suivi de consultation",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   // Posé par middleware.ts sur chaque requête : requis pour que ce script
   // inline passe la CSP stricte (script-src limité au nonce, sans 'unsafe-inline').
-  const nonce = headers().get("x-nonce") ?? undefined;
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html
