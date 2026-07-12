@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: soin_app_test
+    ports:
+      - "5433:5432"
+    # Pas de volume : base jetable, recréée à chaque `up`. Le schéma est
+    # (re)appliqué par tests/integration/global-setup.ts à chaque run de tests.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d soin_app_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

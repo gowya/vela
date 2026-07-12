@@ -92,4 +92,4 @@ soin-app/
 - **RGPD/HDS** : les données patients sont sensibles ; toute requête doit être scopée par praticien (`practitioner_id`) et paramétrée (pas de concaténation SQL brute).
 - **Accessibilité** : contrastes suffisants, labels explicites sur les formulaires, navigation clavier fonctionnelle.
 - **Performance** : pas d'animation décorative, rendu serveur privilégié.
-- **Tests** : aucune stratégie de test automatisé n'est en place actuellement.
+- **Tests** : Vitest (unitaire + intégration API contre Postgres), CI GitHub Actions sur chaque push/PR — voir [`claude/testing_strategy.md`](claude/testing_strategy.md).
