@@ -1,5 +1,16 @@
 import { Resend } from "resend";
 
+const FROM = process.env.RESEND_FROM_EMAIL ?? "Vela <onboarding@resend.dev>";
+
+// IDs des templates créés dans le dashboard Resend (Templates > slug affiché
+// sous le nom). Les variables passées ci-dessous doivent correspondre aux
+// placeholders {{...}} définis dans chaque template — voir emails/*.html.
+const TEMPLATE_IDS = {
+  emailConfirmation: "email-confirmation",
+  welcomeEmail: "welcome-email",
+  accountDeletionConfirmation: "account-deletion-confirmation",
+} as const;
+
 export async function sendAccountDeletionEmail(
   to: string,
   {
@@ -18,15 +29,16 @@ export async function sendAccountDeletionEmail(
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? "Vela <onboarding@resend.dev>",
+      from: FROM,
       to,
-      subject: "Confirmation de suppression de votre compte Vela",
-      html: `
-        <p>Votre compte Vela et l'ensemble des données associées (${patientsCount} patient(s), ${consultationsCount} consultation(s)) ont été définitivement supprimés le ${formattedDate}.</p>
-        <p>Vous trouverez en pièce jointe un export de vos données au format .zip, conservé à titre de justificatif.</p>
-        <p>Cette action est irréversible et aucune copie de ces données n'est conservée par Vela.</p>
-        <p>L'équipe Vela</p>
-      `,
+      template: {
+        id: TEMPLATE_IDS.accountDeletionConfirmation,
+        variables: {
+          deleted_at: formattedDate,
+          patients_count: String(patientsCount),
+          consultations_count: String(consultationsCount),
+        },
+      },
       attachments: [
         {
           filename: `vela-export-${deletedAt.toISOString().slice(0, 10)}.zip`,
@@ -45,18 +57,39 @@ export async function sendVerificationEmail(to: string, token: string) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? "Vela <onboarding@resend.dev>",
+      from: FROM,
       to,
-      subject: "Confirmez votre adresse email",
-      html: `
-        <p>Bienvenue sur Vela.</p>
-        <p>Pour confirmer votre adresse email, cliquez sur le lien ci-dessous.</p>
-        <p><a href="${verifyUrl}">Confirmer mon adresse email</a></p>
-        <p>Ce lien expire dans 24 heures.</p>
-        <p>L'équipe Vela</p>
-      `,
+      template: {
+        id: TEMPLATE_IDS.emailConfirmation,
+        variables: {
+          verify_url: verifyUrl,
+        },
+      },
     });
   } catch (err) {
     console.error("[email] échec envoi de vérification", err);
+  }
+}
+
+export async function sendWelcomeEmail(to: string, firstName: string) {
+  const newPatientUrl = `${process.env.NEXTAUTH_URL}/patients`;
+  const supportEmail = process.env.SUPPORT_EMAIL ?? "bonjour@vela-app.fr";
+
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: FROM,
+      to,
+      template: {
+        id: TEMPLATE_IDS.welcomeEmail,
+        variables: {
+          first_name: firstName,
+          new_patient_url: newPatientUrl,
+          support_email: supportEmail,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("[email] échec envoi de bienvenue", err);
   }
 }

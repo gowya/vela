@@ -1,0 +1,120 @@
+<!--
+  Vela — Email transactionnel : confirmation de suppression de compte
+  Variables Resend (template.variables) :
+    {{deleted_at}}           — date/heure formatées (ex: "10 juillet 2026 à 17:25")
+    {{patients_count}}       — nombre de patients supprimés
+    {{consultations_count}}  — nombre de consultations supprimées
+  Pièce jointe attendue : export .zip des données, joint à l'envoi (hors template, via `attachments` dans emails.send)
+  Objet suggéré : "Confirmation de suppression de votre compte Vela"
+-->
+<!DOCTYPE html>
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />
+<title>Confirmation de suppression de votre compte Vela</title>
+<!--[if mso]>
+<noscript>
+<xml>
+<o:OfficeDocumentSettings>
+<o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml>
+</noscript>
+<![endif]-->
+<style>
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+  body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: #F7F3EC; }
+
+  .vela-bg { background-color: #F7F3EC; }
+  .vela-card { background-color: #FFFDF9; border: 1px solid #D8D3C9; }
+  .vela-text { color: #2B2A28; }
+  .vela-muted { color: #6B6862; }
+  .vela-accent { color: #6B3F45; }
+  .vela-wordmark { color: #6B3F45; font-family: Georgia, 'Times New Roman', serif; }
+  .vela-soft { background-color: #F7F3EC; border: 1px solid #D8D3C9; }
+
+  @media (prefers-color-scheme: dark) {
+    .vela-bg { background-color: #1C1B19 !important; }
+    .vela-card { background-color: #232220 !important; border-color: #3A3835 !important; }
+    .vela-text { color: #F2EEE6 !important; }
+    .vela-muted { color: #A8A399 !important; }
+    .vela-accent, .vela-wordmark { color: #C48A90 !important; }
+    .vela-soft { background-color: #1C1B19 !important; border-color: #3A3835 !important; }
+  }
+
+  @media only screen and (max-width: 600px) {
+    .vela-container { width: 100% !important; }
+    .vela-padding { padding-left: 24px !important; padding-right: 24px !important; }
+  }
+</style>
+</head>
+<body class="vela-bg" style="margin:0; padding:0; background-color:#F7F3EC;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all;">
+    Votre compte Vela et vos données ont été définitivement supprimés.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="vela-bg" style="background-color:#F7F3EC;">
+    <tr>
+      <td align="center" style="padding: 48px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="vela-container" style="width:600px; max-width:600px;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom: 32px;">
+              <span class="vela-wordmark" style="font-size: 22px; letter-spacing: 0.5px;">vela</span>
+            </td>
+          </tr>
+
+          <!-- Carte -->
+          <tr>
+            <td class="vela-card" style="border-radius: 8px; padding: 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="vela-padding" style="padding: 40px 48px 32px 48px;">
+                    <h1 class="vela-text" style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 600; line-height: 1.3;">
+                      Confirmation de suppression de votre compte
+                    </h1>
+
+                    <p class="vela-text" style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6;">
+                      Votre compte Vela et l'ensemble des données associées (<strong>{{patients_count}} patient(s)</strong>, <strong>{{consultations_count}} consultation(s)</strong>) ont été définitivement supprimés le <strong>{{deleted_at}}</strong>.
+                    </p>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="vela-soft" style="border-radius: 8px; margin-bottom: 20px;">
+                      <tr>
+                        <td style="padding: 18px 20px;">
+                          <p class="vela-text" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6;">
+                            Vous trouverez en pièce jointe un export de vos données au format .zip, conservé à titre de justificatif.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p class="vela-text" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6;">
+                      Cette action est irréversible et aucune copie de ces données n'est conservée par Vela.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding: 32px 24px 0 24px;">
+              <p class="vela-muted" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.6;">
+                L'équipe Vela
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

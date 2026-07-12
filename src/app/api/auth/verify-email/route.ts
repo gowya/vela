@@ -19,11 +19,23 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login?verification=expired", url));
   }
 
-  await pool.query(
-    "UPDATE practitioners SET email_verified_at = now() WHERE id = $1",
+  // `WHERE email_verified_at IS NULL` : ne redéclenche pas le mail de
+  // bienvenue (envoyé depuis le dashboard, voir `welcome=1` ci-dessous) si le
+  // lien est recliqué ou redemandé après coup.
+  const { rows: practitionerRows } = await pool.query(
+    `UPDATE practitioners SET email_verified_at = now()
+     WHERE id = $1 AND email_verified_at IS NULL
+     RETURNING id`,
     [record.practitioner_id]
   );
   await pool.query("DELETE FROM email_verification_tokens WHERE token = $1", [token]);
 
-  return NextResponse.redirect(new URL("/account?verification=success", url));
+  // Le mail de bienvenue part une fois que le praticien a réellement atterri
+  // sur le dashboard (voir `src/app/(dashboard)/page.tsx`), pas ici : ça évite
+  // de l'envoyer sur un simple GET (scanner de liens des clients mail, par
+  // exemple) qui ne correspond pas à une vraie visite.
+  const justVerified = practitionerRows.length > 0;
+  const destination = justVerified ? "/?welcome=1" : "/";
+
+  return NextResponse.redirect(new URL(destination, url));
 }

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { sendWelcomeEmail } from "@/lib/email";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardQuickActions } from "./DashboardQuickActions";
 import { CalendarCheckIcon, ClockIcon } from "@phosphor-icons/react/dist/ssr";
@@ -153,10 +155,24 @@ function groupByDay(appointments: TodayAppointment[]): { dayKey: string; date: D
   return Array.from(groups.entries()).map(([dayKey, group]) => ({ dayKey, ...group }));
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   const practitionerId = session?.user?.id;
   const firstName = (session?.user?.name ?? session?.user?.email ?? "").split(" ")[0];
+
+  const { welcome } = await searchParams;
+  if (welcome === "1" && practitionerId && session?.user?.email) {
+    // Envoyé ici plutôt que depuis la route de vérification : ça garantit que
+    // le praticien a réellement atterri sur le dashboard (pas un simple GET
+    // du lien par un scanner de sécurité côté client mail). Le redirect vers
+    // l'URL sans le paramètre évite un renvoi si la page est rechargée.
+    await sendWelcomeEmail(session.user.email, firstName);
+    redirect("/");
+  }
 
   const [todayAppointments, weekAppointments, activationState] = practitionerId
     ? await Promise.all([
