@@ -12,9 +12,18 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
+  // Le Fast Refresh de `next dev` évalue les modules rechargés via `eval()` :
+  // sans 'unsafe-eval' en dev, la CSP stricte fait planter le bundle client au
+  // chargement (EvalError), et plus aucun clic ne fonctionne. Le build de
+  // production n'utilise pas cet eval, donc pas de relâchement en prod.
+  const scriptSrc =
+    process.env.NODE_ENV === "production"
+      ? `'self' 'nonce-${nonce}' 'strict-dynamic'`
+      : `'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`;
+
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
+    script-src ${scriptSrc};
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data:;
     font-src 'self';
