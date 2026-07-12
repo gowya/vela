@@ -130,8 +130,8 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
           htmlFor="signup-consent"
           className={
             consentError
-              ? "text-sm font-normal text-destructive"
-              : "text-sm font-normal text-muted-foreground"
+              ? "block text-sm font-normal text-destructive"
+              : "block text-sm font-normal text-muted-foreground"
           }
         >
           J&apos;accepte que mes données soient traitées conformément à la{" "}
