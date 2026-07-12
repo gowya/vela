@@ -18,6 +18,7 @@
     "@auth/pg-adapter": "^1.4.0",
     "@base-ui/react": "^1.6.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^10.65.0",
     "@tiptap/extension-color": "^3.27.3",
     "@tiptap/extension-placeholder": "^3.27.3",
     "@tiptap/extension-task-item": "^3.27.3",
