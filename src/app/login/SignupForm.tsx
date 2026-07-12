@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -133,8 +134,16 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
               : "text-sm font-normal text-muted-foreground"
           }
         >
-          J&apos;accepte que mes données soient traitées conformément à la politique de
-          confidentialité.
+          J&apos;accepte que mes données soient traitées conformément à la{" "}
+          <Link
+            href="/confidentialite"
+            target="_blank"
+            className="underline underline-offset-2 hover:opacity-70"
+            onClick={(e) => e.stopPropagation()}
+          >
+            politique de confidentialité
+          </Link>
+          .
         </Label>
       </div>
 

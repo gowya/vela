@@ -51,6 +51,19 @@ Vela est une application Next.js (App Router) monolithique : le frontend et les 
 3. En cas d'erreur, message générique affiché ("Email ou mot de passe incorrect."), sans détail sur la cause exacte (sécurité).
 4. En cas de succès, redirection vers l'URL de callback (`/` par défaut).
 
+### Pages légales (`src/app/(legal)`)
+
+- Routes publiques `/cgu`, `/mentions-legales`, `/confidentialite`, `/cookies`, `/sous-traitance` : contenu porté en JSX depuis les documents rédigés dans `Second Cerveau/1 PROJETS/Vela/legal/*.md` (pas de pipeline markdown, inutile pour 5 pages statiques).
+- `_components.tsx` du groupe de routes fournit les briques communes (`Section`, `P`, `Ul`, `LegalLink`, `LegalTable`) pour éviter de dupliquer le style d'une page à l'autre.
+- Liées depuis la case de consentement du signup (`login/SignupForm.tsx`) et l'onglet "Légal" de la page compte (`(dashboard)/account/page.tsx`).
+
+### Monitoring d'erreurs (Sentry)
+
+- `@sentry/nextjs`, initialisé via `src/instrumentation.ts` (runtime Node/edge) et `src/instrumentation-client.ts` (navigateur), configs dans `src/sentry.server.config.ts` / `src/sentry.edge.config.ts`.
+- `src/sentry-scrub.ts` : `beforeSend` partagé qui supprime systématiquement `request.data` et `request.cookies` de chaque event avant envoi — Vela traite des données de santé, aucun corps de requête ne doit remonter chez Sentry, quelle que soit la route.
+- Pas de Session Replay ni de widget de feedback Sentry (capture d'écran/interactions incompatible avec des notes de consultation potentiellement affichées à l'écran).
+- Nécessite `NEXT_PUBLIC_SENTRY_DSN` (projet Sentry à créer) ; `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` uniquement pour l'upload des source maps au build.
+
 ## Points d'attention pour les évolutions futures
 
 - Si un provider OAuth est ajouté (Google, etc.), penser à réintroduire le bouton correspondant dans `login/page.tsx` et à documenter le provider dans `auth.ts`.

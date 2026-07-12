@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
@@ -50,6 +51,7 @@ export default async function AccountPage({
         <TabsList>
           <TabsTrigger value="profil">Profil</TabsTrigger>
           <TabsTrigger value="feedback">Retours</TabsTrigger>
+          <TabsTrigger value="legal">Légal</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profil" className="mt-4">
@@ -144,6 +146,66 @@ export default async function AccountPage({
             </CardHeader>
             <CardContent>
               <FeedbackForm />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="legal" className="mt-4">
+          <Card className="max-w-lg">
+            <CardHeader>
+              <CardTitle>Documents légaux</CardTitle>
+              <CardDescription>
+                Les textes qui encadrent votre utilisation de Vela et le traitement des données.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="flex flex-col gap-2 text-sm">
+                <li>
+                  <Link
+                    href="/cgu"
+                    target="_blank"
+                    className="text-foreground underline underline-offset-2 hover:opacity-70"
+                  >
+                    Conditions générales d&apos;utilisation
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/confidentialite"
+                    target="_blank"
+                    className="text-foreground underline underline-offset-2 hover:opacity-70"
+                  >
+                    Politique de confidentialité
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/sous-traitance"
+                    target="_blank"
+                    className="text-foreground underline underline-offset-2 hover:opacity-70"
+                  >
+                    Accord de sous-traitance
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/cookies"
+                    target="_blank"
+                    className="text-foreground underline underline-offset-2 hover:opacity-70"
+                  >
+                    Politique de cookies
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/mentions-legales"
+                    target="_blank"
+                    className="text-foreground underline underline-offset-2 hover:opacity-70"
+                  >
+                    Mentions légales
+                  </Link>
+                </li>
+              </ul>
             </CardContent>
           </Card>
         </TabsContent>
