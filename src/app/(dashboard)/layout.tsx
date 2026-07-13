@@ -41,7 +41,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       <AppSidebar userName={userName} />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         {!profile.email_verified_at && <EmailVerificationBanner />}
         {children}
       </div>
