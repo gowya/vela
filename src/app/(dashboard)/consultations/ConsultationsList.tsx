@@ -3,10 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ClipboardTextIcon } from "@phosphor-icons/react";
 import type { ConsultationListItem } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { NewConsultationDialog } from "./NewConsultationDialog";
 import { TemplatesManagerDialog } from "./TemplatesManagerDialog";
 
@@ -120,7 +130,7 @@ export function ConsultationsList() {
   const isEmpty = consultations?.length === 0;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8">
+    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Consultations</h1>
         <div className="flex items-center gap-2">
@@ -138,15 +148,42 @@ export function ConsultationsList() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {consultations === null && !error && (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="flex flex-col gap-2 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-3 w-72" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
-      {isEmpty && (
+      {isEmpty && search && (
         <p className="text-sm text-muted-foreground">
-          {search
-            ? "Aucune consultation ne correspond à cette recherche."
-            : "Aucune consultation pour le moment."}
+          Aucune consultation ne correspond à cette recherche.
         </p>
+      )}
+
+      {isEmpty && !search && (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ClipboardTextIcon />
+            </EmptyMedia>
+            <EmptyTitle>Aucune consultation pour le moment</EmptyTitle>
+            <EmptyDescription>
+              Démarrez votre première consultation pour commencer à documenter le suivi.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <NewConsultationDialog />
+          </EmptyContent>
+        </Empty>
       )}
 
       {consultations && !isEmpty && (

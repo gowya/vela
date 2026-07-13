@@ -12,13 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 
 interface NewConsultationDialogProps {
   // Si fourni (ouverture depuis la fiche patient), on saute directement à la page
@@ -93,28 +87,16 @@ function NewConsultationPatientPicker({
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">Patient</p>
-          <Select
-            items={Object.fromEntries(
-              (patients ?? []).map((patient) => [
-                patient.id,
-                `${patient.firstName} ${patient.lastName}`,
-              ])
-            )}
-            value={selectedPatientId}
+          <Combobox
+            label="Patient"
+            options={(patients ?? []).map((patient) => ({
+              value: patient.id,
+              label: `${patient.firstName} ${patient.lastName}`,
+            }))}
+            value={selectedPatientId || null}
             onValueChange={(value) => setSelectedPatientId(value ?? "")}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choisir un patient" />
-            </SelectTrigger>
-            <SelectContent>
-              {patients?.map((patient) => (
-                <SelectItem key={patient.id} value={patient.id}>
-                  {patient.firstName} {patient.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Choisir un patient"
+          />
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

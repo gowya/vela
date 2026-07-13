@@ -13,13 +13,16 @@ import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SPECIALTIES } from "@/lib/specialties";
 
+const ACCOUNT_TABS = ["profil", "billing", "notifications", "feedback", "legal"] as const;
+
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ verification?: string }>;
+  searchParams: Promise<{ verification?: string; tab?: string }>;
 }) {
   const session = await getServerSession(authOptions);
-  const { verification } = await searchParams;
+  const { verification, tab } = await searchParams;
+  const defaultTab = ACCOUNT_TABS.find((value) => value === tab) ?? "profil";
 
   const { rows } = await pool.query(
     `SELECT first_name, last_name, phone, specialty, email, email_verified_at
@@ -40,16 +43,18 @@ export default async function AccountPage({
   const consultationsCount = Number(countRows[0]?.consultations_count ?? 0);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
+    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
       <h1 className="text-2xl font-semibold text-foreground">Compte</h1>
 
       {verification === "success" && (
         <p className="text-sm text-foreground">Adresse confirmée.</p>
       )}
 
-      <Tabs defaultValue="profil">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="profil">Profil</TabsTrigger>
+          <TabsTrigger value="billing">Facturation</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="feedback">Retours</TabsTrigger>
           <TabsTrigger value="legal">Légal</TabsTrigger>
         </TabsList>
@@ -132,6 +137,30 @@ export default async function AccountPage({
                 consultationsCount={consultationsCount}
               />
             </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="billing" className="mt-4">
+          <Card className="max-w-lg">
+            <CardHeader>
+              <CardTitle>Facturation</CardTitle>
+              <CardDescription>
+                Vela est gratuit pendant la bêta. La gestion des abonnements et de la facturation
+                sera disponible ici dès leur lancement.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-4">
+          <Card className="max-w-lg">
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>
+                Les préférences de notifications (rappels de rendez-vous, résumés d&apos;activité...)
+                seront configurables ici prochainement.
+              </CardDescription>
+            </CardHeader>
           </Card>
         </TabsContent>
 

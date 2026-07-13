@@ -3,13 +3,7 @@
 import { useEffect, useState } from "react";
 import { PencilSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 
 type Option = { value: string; label: string };
 
@@ -85,22 +79,14 @@ export function InlineSelectFieldEditor({
       <div className="group flex items-center gap-2">
         {isEditing ? (
           <>
-            <Select
-              items={Object.fromEntries(options.map((option) => [option.value, option.label]))}
-              value={draftValue}
+            <Combobox
+              label={`Modifier ${label.toLowerCase()}`}
+              hideLabel
+              options={[...options]}
+              value={draftValue || null}
               onValueChange={(value) => setDraftValue(value ?? "")}
-            >
-              <SelectTrigger aria-label={`Modifier ${label.toLowerCase()}`}>
-                <SelectValue placeholder={placeholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={placeholder}
+            />
             <Button type="button" size="sm" onClick={() => void handleSave()} disabled={isSaving}>
               {isSaving ? "Enregistrement…" : "Enregistrer"}
             </Button>

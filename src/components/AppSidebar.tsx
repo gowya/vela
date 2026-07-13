@@ -2,11 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HouseIcon, UsersIcon, ClipboardTextIcon } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { signOut } from "next-auth/react";
+import { toast } from "sonner";
+import {
+  HouseIcon,
+  UsersIcon,
+  ClipboardTextIcon,
+  UserIcon,
+  CreditCardIcon,
+  BellIcon,
+  SignOutIcon,
+  SparkleIcon,
+} from "@phosphor-icons/react";
+import { Logo } from "@/components/ui/Logo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 interface AppSidebarProps {
   userName: string;
+  // Vrai tant qu'aucune offre payante n'existe : tout le monde est "freemium"
+  // par défaut. À brancher sur le vrai statut d'abonnement une fois les
+  // offres payantes en place.
+  isFreemium?: boolean;
 }
 
 const navItems = [
@@ -21,60 +55,87 @@ function getInitials(name: string): string {
   return initials.join("") || "?";
 }
 
-export function AppSidebar({ userName }: AppSidebarProps) {
+export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-5 my-5 ml-5 flex h-[calc(100dvh-2.5rem)] w-20 shrink-0 flex-col items-center gap-8 rounded-2xl bg-background py-6 shadow-sm ring-1 ring-foreground/10">
-      <Link
-        href="/account"
-        aria-label="Paramètres du compte"
-        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground transition-transform duration-200 hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        {getInitials(userName)}
-      </Link>
+    <Sidebar collapsible="icon" variant="floating">
+      <SidebarHeader className="flex-row items-center justify-between px-2 pt-1">
+        <div className="flex items-center overflow-hidden group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+          <Logo size={36} />
+        </div>
+        <SidebarTrigger className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
+      </SidebarHeader>
 
-      <nav className="flex flex-col items-center gap-3">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = href === "/" ? pathname === "/" : pathname?.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={isActive ? "page" : undefined}
-              className="group flex w-16 flex-col items-center gap-1 rounded-xl py-1 text-muted-foreground transition-colors duration-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <span className="relative flex h-8 w-14 items-center justify-center">
-                <span
-                  aria-hidden
-                  className={cn(
-                    "absolute inset-0 rounded-full bg-accent transition-all duration-300 ease-out",
-                    isActive
-                      ? "scale-100 opacity-100"
-                      : "scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-60"
-                  )}
-                />
-                <Icon
-                  size={20}
-                  weight={isActive ? "fill" : "regular"}
-                  className={cn(
-                    "relative z-10 transition-colors duration-200",
-                    isActive && "text-accent-foreground"
-                  )}
-                />
-              </span>
-              <span
-                className={cn(
-                  "text-center text-[0.65rem] leading-tight transition-colors duration-200",
-                  isActive && "font-medium text-foreground"
+      <SidebarSeparator />
+
+      <SidebarContent>
+        <SidebarMenu className="gap-1 p-2">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const isActive = href === "/" ? pathname === "/" : pathname?.startsWith(href);
+            return (
+              <SidebarMenuItem key={href}>
+                <SidebarMenuButton isActive={isActive} tooltip={label} render={<Link href={href} />}>
+                  <Icon size={18} weight={isActive ? "fill" : "regular"} />
+                  <span>{label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarContent>
+
+      <SidebarSeparator />
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<SidebarMenuButton />}>
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-[0.6rem] font-medium text-sidebar-primary-foreground">
+                  {getInitials(userName)}
+                </span>
+                <span className="truncate">{userName}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="w-56">
+                {isFreemium && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => toast.info("Les abonnements arrivent bientôt.")}
+                    >
+                      <SparkleIcon size={14} />
+                      Upgrade to Pro
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
                 )}
-              >
-                {label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+                <DropdownMenuItem render={<Link href="/account" />}>
+                  <UserIcon size={14} />
+                  Account
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/account?tab=billing" />}>
+                  <CreditCardIcon size={14} />
+                  Billing
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/account?tab=notifications" />}>
+                  <BellIcon size={14} />
+                  Notifications
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                >
+                  <SignOutIcon size={14} />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
   );
 }

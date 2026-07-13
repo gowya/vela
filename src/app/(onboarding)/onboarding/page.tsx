@@ -7,13 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { SPECIALTIES, type SpecialtyValue } from "@/lib/specialties";
 
 export default function OnboardingPage() {
@@ -99,25 +93,14 @@ export default function OnboardingPage() {
           </div>
 
           <div className="w-full">
-            <Label htmlFor="specialty" className="mb-1">
-              Spécialité
-            </Label>
-            <Select
-              items={Object.fromEntries(SPECIALTIES.map((item) => [item.value, item.label]))}
-              value={specialty}
-              onValueChange={(value) => setSpecialty(value as SpecialtyValue)}
-            >
-              <SelectTrigger id="specialty" className="w-full">
-                <SelectValue placeholder="Sélectionnez votre spécialité" />
-              </SelectTrigger>
-              <SelectContent>
-                {SPECIALTIES.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              id="specialty"
+              label="Spécialité"
+              options={SPECIALTIES}
+              value={specialty || null}
+              onValueChange={(value) => setSpecialty((value as SpecialtyValue) ?? "")}
+              placeholder="Sélectionnez votre spécialité"
+            />
           </div>
 
           {error && <p className="w-full text-sm text-destructive">{error}</p>}

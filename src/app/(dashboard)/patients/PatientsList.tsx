@@ -36,10 +36,14 @@ import {
   CaretUpDownIcon,
   CaretUpIcon,
   ColumnsIcon,
+  CopyIcon,
   DotsSixVerticalIcon,
+  PencilSimpleIcon,
+  TrashIcon,
   UsersIcon,
 } from "@phosphor-icons/react";
-import type { Patient } from "@/types";
+import { toast } from "sonner";
+import type { CustomFieldDefinition, Patient } from "@/types";
 import { calculateAge, isBirthdaySoon } from "@/lib/patient-utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +60,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AddPatientDialog } from "./AddPatientDialog";
 import { PatientDetailDrawer } from "./PatientDetailDrawer";
 
@@ -126,6 +158,40 @@ const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
 
 const COLUMN_PREFS_STORAGE_KEY = "vela:patients-table-columns";
 
+// Les champs personnalisés du praticien deviennent des colonnes au même titre
+// que les propriétés de base, préfixées pour ne jamais entrer en collision
+// avec un id de colonne existant.
+const CUSTOM_COLUMN_PREFIX = "custom:";
+
+function customColumnId(definitionId: string): string {
+  return `${CUSTOM_COLUMN_PREFIX}${definitionId}`;
+}
+
+function getColumnLabel(id: string, customFieldDefinitions: CustomFieldDefinition[]): string {
+  if (COLUMN_LABELS[id]) return COLUMN_LABELS[id];
+  if (id.startsWith(CUSTOM_COLUMN_PREFIX)) {
+    const definitionId = id.slice(CUSTOM_COLUMN_PREFIX.length);
+    return (
+      customFieldDefinitions.find((definition) => definition.id === definitionId)?.fieldName ?? id
+    );
+  }
+  return id;
+}
+
+// Pour un champ à choix multiple, la valeur est stockée en JSON (tableau de
+// chaînes) — cf. PatientDetailDrawer.tsx.
+function formatCustomFieldValue(value: string, definition: CustomFieldDefinition): string {
+  if (definition.fieldType === "choice" && definition.allowMultiple) {
+    try {
+      const parsed = JSON.parse(value || "[]");
+      return Array.isArray(parsed) ? parsed.join(", ") : value;
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
 // Références stables : dnd-kit garde ses écouteurs natifs branchés tant que
 // ces valeurs ne changent pas d'identité — recréées à chaque rendu (littéraux
 // inline), elles font annuler un glisser-déposer en cours avant qu'il aboutisse.
@@ -151,13 +217,12 @@ function loadColumnPrefs(): ColumnPrefs | null {
 }
 
 // Poignée de tri + glisser-déposer pour une colonne facultative.
-function DraggableTableHead({ header }: { header: Header<Patient, unknown> }) {
+function DraggableTableHead({ header, label }: { header: Header<Patient, unknown>; label: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: header.column.id,
   });
 
   const sorted = header.column.getIsSorted();
-  const label = COLUMN_LABELS[header.column.id] ?? header.column.id;
 
   return (
     <TableHead
@@ -225,6 +290,97 @@ function PinnedTableHead({ header }: { header: Header<Patient, unknown> }) {
   );
 }
 
+// Planification rapide du prochain rendez-vous directement depuis la ligne du
+// tableau : ouvre le date picker sur place plutôt que la fiche patient
+// complète. `stopPropagation` partout dans le popover pour ne pas déclencher
+// le clic de ligne (React fait remonter les événements des portails via
+// l'arbre React, pas le DOM).
+function NextAppointmentQuickPicker({
+  patient,
+  onSaved,
+}: {
+  patient: Patient;
+  onSaved: (patient: Patient) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [time, setTime] = useState("00:00");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Choisir une date ne ferme plus le popover : l'utilisateur doit encore
+  // ajuster l'heure (ou corriger la date) avant de confirmer. Fermer
+  // automatiquement forçait à rouvrir le picker pour la moindre correction.
+  function handleSelectDate(date: Date | undefined) {
+    setSelectedDate(date);
+  }
+
+  async function handleConfirm() {
+    if (!selectedDate) return;
+    setIsSaving(true);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const localValue = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${time}`;
+    const response = await fetch(`/api/patients/${patient.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nextAppointmentAt: new Date(localValue).toISOString() }),
+    });
+    setIsSaving(false);
+
+    if (!response.ok) {
+      toast.error("La planification du rendez-vous a échoué.");
+      return;
+    }
+
+    const data = await response.json();
+    onSaved(data.patient);
+    setOpen(false);
+    setSelectedDate(undefined);
+    toast.success("Rendez-vous planifié.");
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        data-row-click-ignore
+        className="text-primary hover:underline focus-visible:outline-none focus-visible:underline"
+      >
+        {isSaving ? "Planification…" : "Planifier un rendez-vous"}
+      </PopoverTrigger>
+      <PopoverContent data-row-click-ignore className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          captionLayout="dropdown"
+          selected={selectedDate}
+          onSelect={handleSelectDate}
+        />
+        <div className="flex items-center justify-between gap-2 border-t border-border p-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor={`next-appointment-time-${patient.id}`} className="text-xs text-muted-foreground">
+              Heure
+            </Label>
+            <Input
+              id={`next-appointment-time-${patient.id}`}
+              type="time"
+              className="h-7 w-auto"
+              value={time}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => setTime(event.target.value)}
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!selectedDate || isSaving}
+            onClick={handleConfirm}
+          >
+            {isSaving ? "Planification…" : "Planifier"}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function PatientsList() {
   const searchParams = useSearchParams();
   const [patients, setPatients] = useState<Patient[] | null>(null);
@@ -238,6 +394,57 @@ export function PatientsList() {
   const [autoEditField, setAutoEditField] = useState<"nextAppointmentAt" | undefined>(
     searchParams.get("edit") === "nextAppointmentAt" ? "nextAppointmentAt" : undefined
   );
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDuplicate(patient: Patient) {
+    const response = await fetch("/api/patients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: patient.firstName,
+        lastName: `${patient.lastName} (copie)`,
+        email: patient.email,
+        phone: patient.phone,
+      }),
+    });
+
+    if (!response.ok) {
+      toast.error("La duplication du patient a échoué.");
+      return;
+    }
+
+    const data = await response.json();
+    setPatients((previous) => [...(previous ?? []), data.patient]);
+    toast.success("Patient dupliqué", {
+      description: `${data.patient.firstName} ${data.patient.lastName} a été créé.`,
+      action: {
+        label: "Voir la fiche",
+        onClick: () => setSelectedPatientId(data.patient.id),
+      },
+    });
+  }
+
+  async function handleDeleteConfirmed() {
+    if (!patientToDelete) return;
+    setIsDeleting(true);
+    const response = await fetch(`/api/patients/${patientToDelete.id}`, {
+      method: "DELETE",
+    });
+    setIsDeleting(false);
+
+    if (!response.ok) {
+      toast.error("La suppression du patient a échoué.");
+      return;
+    }
+
+    setPatients((previous) => previous?.filter((p) => p.id !== patientToDelete.id) ?? previous);
+    if (selectedPatientId === patientToDelete.id) {
+      setSelectedPatientId(null);
+    }
+    toast.success("Patient supprimé.");
+    setPatientToDelete(null);
+  }
 
   // La liste ne remonte pas quand on navigue vers elle-même avec un nouveau
   // patientId (ex. CTA « Voir la fiche » d'un toast déclenché depuis cette
@@ -259,6 +466,7 @@ export function PatientsList() {
     DEFAULT_COLUMN_VISIBILITY
   );
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(DEFAULT_COLUMN_ORDER);
+  const [customFieldDefinitions, setCustomFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
   const hasHydratedPrefs = useRef(false);
 
   // Charge les préférences de colonnes sauvegardées après le montage (accès
@@ -299,6 +507,50 @@ export function PatientsList() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCustomFieldDefinitions() {
+      const response = await fetch("/api/custom-fields");
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!cancelled) setCustomFieldDefinitions(data.customFields ?? []);
+    }
+
+    loadCustomFieldDefinitions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Ajoute les champs personnalisés pas encore connus (nouveau champ créé
+  // depuis une autre session, ou tout premier chargement sans préférences
+  // sauvegardées) à l'ordre et à la visibilité des colonnes, sans jamais
+  // écraser un choix déjà fait par le praticien.
+  useEffect(() => {
+    if (customFieldDefinitions.length === 0) return;
+
+    setColumnOrder((current) => {
+      const missing = customFieldDefinitions
+        .map((definition) => customColumnId(definition.id))
+        .filter((id) => !current.includes(id));
+      return missing.length > 0 ? [...current, ...missing] : current;
+    });
+
+    setColumnVisibility((current) => {
+      const additions: VisibilityState = {};
+      let changed = false;
+      for (const definition of customFieldDefinitions) {
+        const id = customColumnId(definition.id);
+        if (!(id in current)) {
+          additions[id] = definition.showInTable;
+          changed = true;
+        }
+      }
+      return changed ? { ...current, ...additions } : current;
+    });
+  }, [customFieldDefinitions]);
 
   const columns = useMemo<ColumnDef<Patient>[]>(
     () => [
@@ -344,17 +596,16 @@ export function PatientsList() {
             );
           }
           return (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setAutoEditField("nextAppointmentAt");
-                setSelectedPatientId(patient.id);
-              }}
-              className="text-primary hover:underline focus-visible:outline-none focus-visible:underline"
-            >
-              Planifier un rendez-vous
-            </button>
+            <NextAppointmentQuickPicker
+              patient={patient}
+              onSaved={(updatedPatient) =>
+                setPatients(
+                  (previous) =>
+                    previous?.map((p) => (p.id === updatedPatient.id ? updatedPatient : p)) ??
+                    previous
+                )
+              }
+            />
           );
         },
       },
@@ -401,8 +652,22 @@ export function PatientsList() {
         accessorFn: (patient) => new Date(patient.createdAt),
         cell: ({ row }) => formatDate(row.original.createdAt),
       },
+      ...customFieldDefinitions.map(
+        (definition): ColumnDef<Patient> => ({
+          id: customColumnId(definition.id),
+          accessorFn: (patient) =>
+            formatCustomFieldValue(patient.customFieldValues?.[definition.id] ?? "", definition),
+          cell: ({ row }) => {
+            const value = formatCustomFieldValue(
+              row.original.customFieldValues?.[definition.id] ?? "",
+              definition
+            );
+            return <span className="text-muted-foreground">{value || "—"}</span>;
+          },
+        })
+      ),
     ],
-    []
+    [customFieldDefinitions]
   );
 
   const table = useReactTable({
@@ -444,7 +709,7 @@ export function PatientsList() {
   const otherHeaders = headerGroup?.headers.filter((header) => header.column.id !== "name") ?? [];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8">
+    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold text-foreground">Patients</h1>
@@ -462,7 +727,10 @@ export function PatientsList() {
               Colonnes
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {OPTIONAL_COLUMN_IDS.map((id) => {
+              {[
+                ...OPTIONAL_COLUMN_IDS,
+                ...customFieldDefinitions.map((definition) => customColumnId(definition.id)),
+              ].map((id) => {
                 const column = table.getColumn(id);
                 if (!column) return null;
                 return (
@@ -471,7 +739,7 @@ export function PatientsList() {
                     checked={column.getIsVisible()}
                     onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
                   >
-                    {COLUMN_LABELS[id]}
+                    {getColumnLabel(id, customFieldDefinitions)}
                   </DropdownMenuCheckboxItem>
                 );
               })}
@@ -486,11 +754,41 @@ export function PatientsList() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {patients === null && !error && (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-6 border-b border-border p-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-6 border-b border-border p-2 last:border-0">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+          ))}
+        </div>
       )}
 
       {patients?.length === 0 && (
-        <p className="text-sm text-muted-foreground">Aucun patient pour le moment.</p>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UsersIcon />
+            </EmptyMedia>
+            <EmptyTitle>Aucun patient pour le moment</EmptyTitle>
+            <EmptyDescription>
+              Ajoutez votre premier patient pour commencer à suivre sa prise en charge.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <AddPatientDialog
+              onCreated={(patient) => setPatients((previous) => [...(previous ?? []), patient])}
+            />
+          </EmptyContent>
+        </Empty>
       )}
 
       {patients !== null && patients.length > 0 && (
@@ -507,43 +805,78 @@ export function PatientsList() {
                   {nameHeader && <PinnedTableHead header={nameHeader} />}
                   <SortableContext items={draggableColumnIds} strategy={horizontalListSortingStrategy}>
                     {otherHeaders.map((header) => (
-                      <DraggableTableHead key={header.id} header={header} />
+                      <DraggableTableHead
+                        key={header.id}
+                        header={header}
+                        label={getColumnLabel(header.column.id, customFieldDefinitions)}
+                      />
                     ))}
                   </SortableContext>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      setAutoEditField(undefined);
-                      setSelectedPatientId(row.original.id);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setAutoEditField(undefined);
-                        setSelectedPatientId(row.original.id);
+                  <ContextMenu key={row.id}>
+                    <ContextMenuTrigger
+                      render={
+                        <TableRow
+                          role="button"
+                          tabIndex={0}
+                          onClick={(event) => {
+                            if ((event.target as HTMLElement).closest("[data-row-click-ignore]")) {
+                              return;
+                            }
+                            setAutoEditField(undefined);
+                            setSelectedPatientId(row.original.id);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setAutoEditField(undefined);
+                              setSelectedPatientId(row.original.id);
+                            }
+                          }}
+                          className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                        />
                       }
-                    }}
-                    className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={
-                          cell.column.id === "name"
-                            ? "sticky left-0 z-10 border-r border-border bg-card"
-                            : undefined
-                        }
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={
+                            cell.column.id === "name"
+                              ? "sticky left-0 z-10 border-r border-border bg-card"
+                              : undefined
+                          }
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        onClick={() => {
+                          setAutoEditField(undefined);
+                          setSelectedPatientId(row.original.id);
+                        }}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                        <PencilSimpleIcon size={14} />
+                        Modifier
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => void handleDuplicate(row.original)}>
+                        <CopyIcon size={14} />
+                        Dupliquer
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        variant="destructive"
+                        onClick={() => setPatientToDelete(row.original)}
+                      >
+                        <TrashIcon size={14} />
+                        Supprimer
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
               </TableBody>
             </Table>
@@ -564,6 +897,40 @@ export function PatientsList() {
         }
         autoEditField={selectedPatientId ? autoEditField : undefined}
       />
+
+      <Dialog
+        open={patientToDelete !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setPatientToDelete(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer ce patient ?</DialogTitle>
+            <DialogDescription>
+              {patientToDelete &&
+                `${patientToDelete.firstName} ${patientToDelete.lastName} et l'ensemble de ses consultations seront définitivement supprimés. Cette action est irréversible.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setPatientToDelete(null)}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => void handleDeleteConfirmed()}
+            >
+              {isDeleting ? "Suppression…" : "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

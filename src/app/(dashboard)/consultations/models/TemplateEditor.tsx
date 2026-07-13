@@ -14,6 +14,7 @@ import type { ConsultationContent } from "@/types";
 import { deriveContentText } from "@/lib/consultation-utils";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   EMPTY_CONSULTATION_CONTENT,
   TiptapEditor,
@@ -200,7 +201,7 @@ export function TemplateEditor({ templateId = null }: TemplateEditorProps) {
   const statusInfo = status === "idle" ? null : statusConfig[status];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-8">
+    <main className="flex min-h-screen min-w-0 flex-col gap-4 px-16 py-8">
       <div className="flex items-center justify-between">
         <Link
           href="/consultations"
@@ -234,7 +235,11 @@ export function TemplateEditor({ templateId = null }: TemplateEditorProps) {
       />
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
       ) : (
         <TiptapEditor
           ref={editorRef}

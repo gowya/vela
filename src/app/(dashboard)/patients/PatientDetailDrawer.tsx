@@ -2,6 +2,24 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import {
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
 import type {
   ConsultationListItem,
   CustomFieldDefinition,
@@ -11,29 +29,32 @@ import type {
 import { calculateAge, isBirthdaySoon } from "@/lib/patient-utils";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox, ComboboxMultiple } from "@/components/ui/combobox";
+import { DatePicker, DateTimePicker } from "@/components/ui/date-picker";
+import { Skeleton } from "@/components/ui/skeleton";
 import { NewConsultationDialog } from "@/app/(dashboard)/consultations/NewConsultationDialog";
 import {
   AddressBookIcon,
   CalendarCheckIcon,
+  DotsSixVerticalIcon,
   NotebookIcon,
   NoteIcon,
   PlusIcon,
@@ -146,6 +167,102 @@ function SectionHeader({ icon: SectionIcon, label }: { icon: Icon; label: string
   );
 }
 
+// Champ personnalisé réordonnable (drag & drop) dans sa section dédiée du
+// drawer, avec suppression individuelle — le contrôle de saisie varie selon
+// le type de champ (choix simple/multiple, texte, nombre, date).
+function SortableCustomField({
+  definition,
+  value,
+  onValueChange,
+  onDelete,
+}: {
+  definition: CustomFieldDefinition;
+  value: string;
+  onValueChange: (value: string) => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: definition.id,
+  });
+
+  const isWide = definition.fieldType === "choice" && definition.allowMultiple;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        transition,
+        opacity: isDragging ? 0.7 : 1,
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className={isWide ? "col-span-2" : undefined}
+    >
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <Label htmlFor={`edit-custom-${definition.id}`} className="mb-0">
+          {definition.fieldName}
+        </Label>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label={`Déplacer le champ ${definition.fieldName}`}
+            className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          >
+            <DotsSixVerticalIcon size={12} />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            aria-label={`Supprimer le champ ${definition.fieldName}`}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <TrashIcon size={12} />
+          </button>
+        </div>
+      </div>
+
+      {definition.fieldType === "choice" ? (
+        definition.allowMultiple ? (
+          <ComboboxMultiple
+            id={`edit-custom-${definition.id}`}
+            label={definition.fieldName}
+            hideLabel
+            options={(definition.options ?? []).map((option) => ({ value: option, label: option }))}
+            value={parseChoiceValue(value, true)}
+            onValueChange={(values) => onValueChange(JSON.stringify(values))}
+            placeholder="Sélectionner…"
+          />
+        ) : (
+          <Combobox
+            id={`edit-custom-${definition.id}`}
+            label={definition.fieldName}
+            hideLabel
+            options={(definition.options ?? []).map((option) => ({ value: option, label: option }))}
+            value={value || null}
+            onValueChange={(next) => onValueChange(next ?? "")}
+            placeholder="Sélectionner…"
+          />
+        )
+      ) : (
+        <Input
+          id={`edit-custom-${definition.id}`}
+          type={
+            definition.fieldType === "number"
+              ? "number"
+              : definition.fieldType === "date"
+              ? "date"
+              : "text"
+          }
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
 interface PatientDetailDrawerProps {
   patientId: string | null;
   onClose: () => void;
@@ -176,9 +293,68 @@ export function PatientDetailDrawer({
   const [newFieldOptions, setNewFieldOptions] = useState<string[]>(["", ""]);
   const [newFieldAllowMultiple, setNewFieldAllowMultiple] = useState(false);
   const [isCreatingField, setIsCreatingField] = useState(false);
+  const [fieldToDelete, setFieldToDelete] = useState<CustomFieldDefinition | null>(null);
+  const [isDeletingField, setIsDeletingField] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const autoFocusTriggeredRef = useRef(false);
+  // Dernier état connu comme enregistré (chargement initial ou sauvegarde
+  // réussie) : sert de référence pour détecter des modifications non
+  // enregistrées avant de fermer le drawer.
+  const pristineFormRef = useRef<EditFormState | null>(null);
+  const pristineCustomFieldValuesRef = useRef<Record<string, string>>({});
+
+  const fieldDragSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor, {})
+  );
+
+  function handleFieldDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setCustomFieldDefinitions((previous) => {
+      const oldIndex = previous.findIndex((definition) => definition.id === active.id);
+      const newIndex = previous.findIndex((definition) => definition.id === over.id);
+      const reordered = arrayMove(previous, oldIndex, newIndex);
+
+      fetch("/api/custom-fields", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: reordered.map((definition) => definition.id) }),
+      }).catch(() => {
+        toast.error("Le réordonnancement des champs a échoué.");
+      });
+
+      return reordered;
+    });
+  }
+
+  async function handleDeleteFieldConfirmed() {
+    if (!fieldToDelete) return;
+    setIsDeletingField(true);
+    const response = await fetch(`/api/custom-fields/${fieldToDelete.id}`, {
+      method: "DELETE",
+    });
+    setIsDeletingField(false);
+
+    if (!response.ok) {
+      toast.error("La suppression du champ a échoué.");
+      return;
+    }
+
+    setCustomFieldDefinitions((previous) =>
+      previous.filter((definition) => definition.id !== fieldToDelete.id)
+    );
+    setCustomFieldValues((previous) => {
+      const { [fieldToDelete.id]: _removed, ...rest } = previous;
+      return rest;
+    });
+    toast.success("Champ personnalisé supprimé.");
+    setFieldToDelete(null);
+  }
 
   useEffect(() => {
     setPatient(null);
@@ -206,7 +382,7 @@ export function PatientDetailDrawer({
       const loadedCustomFields: PatientDetailField[] = data.customFields ?? [];
       setPatient(loadedPatient);
       setCustomFields(loadedCustomFields);
-      setForm({
+      const loadedForm: EditFormState = {
         firstName: loadedPatient.firstName,
         lastName: loadedPatient.lastName,
         email: loadedPatient.email ?? "",
@@ -218,7 +394,9 @@ export function PatientDetailDrawer({
         status: loadedPatient.status ?? "",
         intakeNotes: loadedPatient.intakeNotes ?? "",
         nextAppointmentAt: toDateTimeLocalValue(loadedPatient.nextAppointmentAt),
-      });
+      };
+      setForm(loadedForm);
+      pristineFormRef.current = loadedForm;
     }
 
     async function loadConsultations() {
@@ -254,14 +432,14 @@ export function PatientDetailDrawer({
     const existingValues = Object.fromEntries(
       customFields.map((field) => [field.fieldDefinitionId, field.value ?? ""])
     );
-    setCustomFieldValues(
-      Object.fromEntries(
-        customFieldDefinitions.map((definition) => [
-          definition.id,
-          existingValues[definition.id] ?? "",
-        ])
-      )
+    const nextValues = Object.fromEntries(
+      customFieldDefinitions.map((definition) => [
+        definition.id,
+        existingValues[definition.id] ?? "",
+      ])
     );
+    setCustomFieldValues(nextValues);
+    pristineCustomFieldValuesRef.current = nextValues;
   }, [customFieldDefinitions, customFields]);
 
   useEffect(() => {
@@ -384,9 +562,22 @@ export function PatientDetailDrawer({
     }
 
     const data = await response.json();
+    const updatedCustomFields: PatientDetailField[] = data.customFields ?? [];
     setPatient(data.patient);
-    setCustomFields(data.customFields ?? []);
-    onUpdated(data.patient);
+    setCustomFields(updatedCustomFields);
+    pristineFormRef.current = form;
+    // La liste des patients affiche les champs personnalisés en colonnes : on
+    // lui transmet leurs valeurs à jour, sinon elle resterait sur les valeurs
+    // chargées à l'ouverture du drawer jusqu'au prochain rechargement complet.
+    onUpdated({
+      ...data.patient,
+      customFieldValues: Object.fromEntries(
+        updatedCustomFields.map((field) => [field.fieldDefinitionId, field.value ?? ""])
+      ),
+    });
+    // Cliquer sur Enregistrer signifie que l'utilisateur a terminé : on ferme
+    // le drawer plutôt que de le laisser ouvert sur les données à jour.
+    onClose();
   }
 
   const open = patientId !== null;
@@ -396,26 +587,82 @@ export function PatientDetailDrawer({
     ? [patient.genderIdentity, age !== null ? `${age} ans` : null].filter(Boolean).join(" · ")
     : "";
 
+  const isDirty =
+    form !== null &&
+    (JSON.stringify(form) !== JSON.stringify(pristineFormRef.current) ||
+      JSON.stringify(customFieldValues) !== JSON.stringify(pristineCustomFieldValuesRef.current));
+
+  function requestClose() {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+      return;
+    }
+    onClose();
+  }
+
+  function handleDiscardConfirmed() {
+    setShowDiscardConfirm(false);
+    onClose();
+  }
+
   return (
+    <>
     <Sheet
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) onClose();
+        if (!nextOpen) requestClose();
       }}
     >
-      <SheetContent side="right" className="flex flex-col p-0 sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="truncate">
-            {patient ? `${patient.firstName} ${patient.lastName}` : "Patient"}
-          </SheetTitle>
-          {identitySummary && <SheetDescription>{identitySummary}</SheetDescription>}
+      <SheetContent side="right" className="flex flex-col p-0 sm:max-w-lg" showCloseButton={false}>
+        <SheetHeader className="flex-row items-center justify-between gap-3 pr-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <SheetTitle className="truncate">
+              {patient ? `${patient.firstName} ${patient.lastName}` : "Patient"}
+            </SheetTitle>
+            {identitySummary && <SheetDescription>{identitySummary}</SheetDescription>}
+          </div>
+          {patient && form && (
+            <div className="flex shrink-0 items-center gap-2">
+              {isDirty && (
+                <Button type="button" variant="ghost" onClick={requestClose}>
+                  Annuler les modifications
+                </Button>
+              )}
+              <Button type="submit" form="patient-edit-form" disabled={isSubmitting}>
+                {isSubmitting ? "Enregistrement…" : "Enregistrer"}
+              </Button>
+            </div>
+          )}
         </SheetHeader>
 
         {error && !form && <p className="p-4 text-sm text-destructive">{error}</p>}
-        {!patient && !error && <p className="p-4 text-sm text-muted-foreground">Chargement…</p>}
+        {!patient && !error && (
+          <div className="flex flex-1 flex-col gap-5 overflow-hidden p-4">
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-3 w-20" />
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-7" />
+                <Skeleton className="h-7" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-7" />
+                <Skeleton className="h-7" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7" />
+              <Skeleton className="h-7" />
+            </div>
+          </div>
+        )}
 
         {patient && form && (
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+          <form
+            id="patient-edit-form"
+            onSubmit={handleSubmit}
+            className="flex flex-1 flex-col overflow-hidden"
+          >
             <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4 text-sm">
               <div className="flex flex-col gap-3">
                 <SectionHeader icon={UserIcon} label="Identité" />
@@ -441,12 +688,11 @@ export function PatientDetailDrawer({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="edit-birthDate">Date de naissance</Label>
-                    <Input
+                    <DatePicker
                       id="edit-birthDate"
-                      type="date"
+                      label="Date de naissance"
                       value={form.birthDate}
-                      onChange={(event) => updateField("birthDate", event.target.value)}
+                      onValueChange={(value) => updateField("birthDate", value)}
                     />
                     {birthdaySoon && (
                       <p className="mt-1 text-xs font-medium text-primary">
@@ -455,25 +701,14 @@ export function PatientDetailDrawer({
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="edit-genderIdentity">Identité de genre</Label>
-                    <Select
-                      items={Object.fromEntries(
-                        GENDER_IDENTITY_OPTIONS.map((option) => [option, option])
-                      )}
-                      value={form.genderIdentity}
+                    <Combobox
+                      id="edit-genderIdentity"
+                      label="Identité de genre"
+                      options={GENDER_IDENTITY_OPTIONS.map((option) => ({ value: option, label: option }))}
+                      value={form.genderIdentity || null}
                       onValueChange={(value) => updateField("genderIdentity", value ?? "")}
-                    >
-                      <SelectTrigger id="edit-genderIdentity" className="w-full">
-                        <SelectValue placeholder="Non renseignée" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENDER_IDENTITY_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Non renseignée"
+                    />
                   </div>
                 </div>
               </div>
@@ -489,7 +724,10 @@ export function PatientDetailDrawer({
                 </div>
 
                 {consultations === null && (
-                  <p className="text-xs text-muted-foreground">Chargement…</p>
+                  <div className="flex flex-col gap-1">
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-full" />
+                  </div>
                 )}
                 {consultations?.length === 0 && (
                   <p className="text-xs text-muted-foreground">
@@ -555,53 +793,44 @@ export function PatientDetailDrawer({
 
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <SectionHeader icon={NotebookIcon} label="Suivi" />
-                <div>
-                  <Label htmlFor="edit-identifiedIssue">Problématique identifiée</Label>
-                  <Input
-                    id="edit-identifiedIssue"
-                    value={form.identifiedIssue}
-                    onChange={(event) => updateField("identifiedIssue", event.target.value)}
-                  />
-                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="edit-status">Situation relationnelle</Label>
-                    <Select
-                      items={Object.fromEntries(
-                        RELATIONSHIP_STATUS_OPTIONS.map((option) => [option, option])
-                      )}
-                      value={form.status}
-                      onValueChange={(value) => updateField("status", value ?? "")}
-                    >
-                      <SelectTrigger id="edit-status" className="w-full">
-                        <SelectValue placeholder="Non renseignée" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RELATIONSHIP_STATUS_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="edit-identifiedIssue">Problématique identifiée</Label>
+                    <Input
+                      id="edit-identifiedIssue"
+                      value={form.identifiedIssue}
+                      onChange={(event) => updateField("identifiedIssue", event.target.value)}
+                    />
                   </div>
+                  <div>
+                    <Combobox
+                      id="edit-status"
+                      label="Situation relationnelle"
+                      options={RELATIONSHIP_STATUS_OPTIONS.map((option) => ({
+                        value: option,
+                        label: option,
+                      }))}
+                      value={form.status || null}
+                      onValueChange={(value) => updateField("status", value ?? "")}
+                      placeholder="Non renseignée"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Dernier rendez-vous</Label>
                     <p className="flex h-7 items-center text-muted-foreground">
                       {formatDate(patient.lastAppointmentAt)}
                     </p>
                   </div>
-                </div>
-                <div>
-                  <Label htmlFor="edit-nextAppointmentAt">Prochain rendez-vous</Label>
-                  <Input
-                    id="edit-nextAppointmentAt"
-                    type="datetime-local"
-                    value={form.nextAppointmentAt}
-                    onChange={(event) =>
-                      updateField("nextAppointmentAt", event.target.value)
-                    }
-                  />
+                  <div>
+                    <DateTimePicker
+                      id="edit-nextAppointmentAt"
+                      label="Prochain rendez-vous"
+                      value={form.nextAppointmentAt}
+                      onValueChange={(value) => updateField("nextAppointmentAt", value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -618,104 +847,33 @@ export function PatientDetailDrawer({
                 <SectionHeader icon={TagIcon} label="Champs personnalisés" />
 
                 {customFieldDefinitions.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {customFieldDefinitions.map((definition) => (
-                      <div
-                        key={definition.id}
-                        className={
-                          definition.fieldType === "choice" && definition.allowMultiple
-                            ? "col-span-2"
-                            : undefined
-                        }
-                      >
-                        <Label htmlFor={`edit-custom-${definition.id}`}>
-                          {definition.fieldName}
-                        </Label>
-                        {definition.fieldType === "choice" ? (
-                          definition.allowMultiple ? (
-                            <div className="flex flex-col gap-1.5 pt-1">
-                              {(definition.options ?? []).map((option) => {
-                                const selected = parseChoiceValue(
-                                  customFieldValues[definition.id],
-                                  true
-                                );
-                                const checked = selected.includes(option);
-                                return (
-                                  <label
-                                    key={option}
-                                    className="flex items-center gap-2 text-sm text-foreground"
-                                  >
-                                    <Checkbox
-                                      checked={checked}
-                                      onCheckedChange={(next) =>
-                                        setCustomFieldValues((previous) => {
-                                          const current = parseChoiceValue(
-                                            previous[definition.id],
-                                            true
-                                          );
-                                          const updated =
-                                            next === true
-                                              ? [...current, option]
-                                              : current.filter((value) => value !== option);
-                                          return {
-                                            ...previous,
-                                            [definition.id]: JSON.stringify(updated),
-                                          };
-                                        })
-                                      }
-                                    />
-                                    {option}
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <Select
-                              items={Object.fromEntries(
-                                (definition.options ?? []).map((option) => [option, option])
-                              )}
-                              value={customFieldValues[definition.id] || undefined}
-                              onValueChange={(value) =>
-                                setCustomFieldValues((previous) => ({
-                                  ...previous,
-                                  [definition.id]: value ?? "",
-                                }))
-                              }
-                            >
-                              <SelectTrigger id={`edit-custom-${definition.id}`} className="w-full">
-                                <SelectValue placeholder="Sélectionner…" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(definition.options ?? []).map((option) => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )
-                        ) : (
-                          <Input
-                            id={`edit-custom-${definition.id}`}
-                            type={
-                              definition.fieldType === "number"
-                                ? "number"
-                                : definition.fieldType === "date"
-                                ? "date"
-                                : "text"
-                            }
+                  <DndContext
+                    sensors={fieldDragSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleFieldDragEnd}
+                  >
+                    <SortableContext
+                      items={customFieldDefinitions.map((definition) => definition.id)}
+                      strategy={rectSortingStrategy}
+                    >
+                      <div className="grid grid-cols-2 gap-3">
+                        {customFieldDefinitions.map((definition) => (
+                          <SortableCustomField
+                            key={definition.id}
+                            definition={definition}
                             value={customFieldValues[definition.id] ?? ""}
-                            onChange={(event) =>
+                            onValueChange={(value) =>
                               setCustomFieldValues((previous) => ({
                                 ...previous,
-                                [definition.id]: event.target.value,
+                                [definition.id]: value,
                               }))
                             }
+                            onDelete={() => setFieldToDelete(definition)}
                           />
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
 
                 {isAddingField ? (
@@ -730,23 +888,16 @@ export function PatientDetailDrawer({
                       />
                     </div>
                     <div>
-                      <Label htmlFor="newFieldType">Type de champ</Label>
-                      <Select
-                        items={CUSTOM_FIELD_TYPE_LABELS}
+                      <Combobox
+                        id="newFieldType"
+                        label="Type de champ"
+                        options={Object.entries(CUSTOM_FIELD_TYPE_LABELS).map(([value, label]) => ({
+                          value,
+                          label,
+                        }))}
                         value={newFieldType}
                         onValueChange={(value) => setNewFieldType(value as CustomFieldType)}
-                      >
-                        <SelectTrigger id="newFieldType" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(CUSTOM_FIELD_TYPE_LABELS).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
 
                     {newFieldType === "choice" && (
@@ -834,16 +985,60 @@ export function PatientDetailDrawer({
 
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
-
-            <SheetFooter>
-              <SheetClose render={<Button type="button" variant="ghost" />}>Fermer</SheetClose>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Enregistrement…" : "Enregistrer"}
-              </Button>
-            </SheetFooter>
           </form>
         )}
       </SheetContent>
     </Sheet>
+
+    <Dialog
+      open={fieldToDelete !== null}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) setFieldToDelete(null);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Supprimer ce champ personnalisé ?</DialogTitle>
+          <DialogDescription>
+            {fieldToDelete &&
+              `« ${fieldToDelete.fieldName} » et sa valeur pour tous vos patients seront définitivement supprimés. Cette action est irréversible.`}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => setFieldToDelete(null)}>
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isDeletingField}
+            onClick={() => void handleDeleteFieldConfirmed()}
+          >
+            {isDeletingField ? "Suppression…" : "Supprimer"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Abandonner les modifications ?</DialogTitle>
+          <DialogDescription>
+            Ce patient a des modifications non enregistrées. Si vous fermez maintenant, elles
+            seront perdues.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => setShowDiscardConfirm(false)}>
+            Continuer l&apos;édition
+          </Button>
+          <Button type="button" variant="destructive" onClick={handleDiscardConfirmed}>
+            Abandonner
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
