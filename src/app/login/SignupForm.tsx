@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/components/ui/toast";
 
 export function SignupForm({ onToggle }: { onToggle: () => void }) {
   const router = useRouter();
+  const toast = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,6 +69,7 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
       return;
     }
 
+    toast.add({ type: "success", description: "Compte créé." });
     router.push("/onboarding");
   }
 

@@ -4,6 +4,7 @@ import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ToastProvider, Toaster } from "@/components/ui/toast";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -57,7 +58,10 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-sans" suppressHydrationWarning>
-        {children}
+        <ToastProvider>
+          {children}
+          <Toaster placement="top" />
+        </ToastProvider>
         <Analytics />
       </body>
     </html>
