@@ -7,7 +7,6 @@ import {
   ArrowsClockwiseIcon,
   CaretLeftIcon,
   CheckCircleIcon,
-  SquaresFourIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import type { Consultation, ConsultationContent, ConsultationTemplate, Patient } from "@/types";
@@ -21,13 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   EMPTY_CONSULTATION_CONTENT,
@@ -383,7 +377,7 @@ export function ConsultationEditor({
   const statusInfo = statusConfig[status];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-8">
+    <main className="flex min-h-screen min-w-0 flex-col gap-4 px-16 py-8">
       <div className="flex items-center justify-between">
         <Link
           href="/consultations"
@@ -431,30 +425,25 @@ export function ConsultationEditor({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             {isBlankDraft && availableTemplates && availableTemplates.length > 0 && (
-              <Select
-                items={Object.fromEntries(
-                  availableTemplates.map((t) => [t.id, t.name])
-                )}
-                value={selectedTemplateId ?? ""}
+              <Combobox
+                label="Partir d'un modèle"
+                hideLabel
+                className="h-6 w-48"
+                options={availableTemplates.map((t) => ({ value: t.id, label: t.name }))}
+                value={selectedTemplateId}
                 onValueChange={(value) => value && handleStartFromTemplate(value)}
-              >
-                <SelectTrigger size="sm" className="w-auto gap-1.5">
-                  <SquaresFourIcon size={12} />
-                  <SelectValue placeholder="Partir d'un modèle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTemplates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Partir d'un modèle"
+              />
             )}
             <Button
               type="button"

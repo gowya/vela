@@ -24,6 +24,9 @@ export interface Patient {
   lastAppointmentAt: Date | null;
   nextAppointmentAt: Date | null;
   createdAt: Date;
+  // Uniquement peuplé par la liste des patients (colonnes dynamiques du
+  // tableau) : valeurs des champs personnalisés, indexées par field_definition_id.
+  customFieldValues?: Record<string, string>;
 }
 
 export type CustomFieldType = "text" | "choice" | "date" | "number";
@@ -37,6 +40,10 @@ export interface CustomFieldDefinition {
   options: string[] | null;
   // Uniquement pertinent pour fieldType === "choice" : sélection unique ou multiple.
   allowMultiple: boolean;
+  // Position dans la section "Champs personnalisés" du drawer patient (drag & drop).
+  displayOrder: number;
+  // Si le praticien a choisi d'afficher ce champ en colonne dans le tableau Patients.
+  showInTable: boolean;
   createdAt: Date;
 }
 

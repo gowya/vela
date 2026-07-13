@@ -21,7 +21,30 @@ export async function GET() {
     [session.user.id]
   );
 
-  return NextResponse.json({ patients: rows.map(mapPatientRow) });
+  // Valeurs des champs personnalisés de tous les patients du praticien, en une
+  // seule requête (colonnes dynamiques du tableau) plutôt qu'un aller-retour
+  // par patient.
+  const { rows: customFieldValueRows } = await pool.query(
+    `SELECT cfv.patient_id, cfv.field_definition_id, cfv.value
+     FROM patient_custom_field_values cfv
+     JOIN patients p ON p.id = cfv.patient_id
+     WHERE p.practitioner_id = $1`,
+    [session.user.id]
+  );
+
+  const customFieldValuesByPatient = new Map<string, Record<string, string>>();
+  for (const row of customFieldValueRows) {
+    const values = customFieldValuesByPatient.get(row.patient_id) ?? {};
+    values[row.field_definition_id] = row.value ?? "";
+    customFieldValuesByPatient.set(row.patient_id, values);
+  }
+
+  return NextResponse.json({
+    patients: rows.map((row) => ({
+      ...mapPatientRow(row),
+      customFieldValues: customFieldValuesByPatient.get(row.id) ?? {},
+    })),
+  });
 }
 
 export async function POST(request: Request) {

@@ -171,3 +171,26 @@ export async function PATCH(
     client.release();
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const { rows } = await pool.query(
+    "DELETE FROM patients WHERE id = $1 AND practitioner_id = $2 RETURNING id",
+    [id, session.user.id]
+  );
+
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "Patient introuvable." }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
+}

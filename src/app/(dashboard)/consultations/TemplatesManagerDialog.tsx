@@ -20,14 +20,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TemplatesManagerDialog() {
   const router = useRouter();
@@ -97,7 +92,11 @@ export function TemplatesManagerDialog() {
 
           <div className="flex min-w-0 flex-col gap-2">
             {templates === null && (
-              <p className="text-sm text-muted-foreground">Chargement…</p>
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
             )}
 
             {templates?.length === 0 && (
@@ -196,28 +195,16 @@ export function TemplatesManagerDialog() {
           </DialogHeader>
 
           <div className="flex flex-col gap-2">
-            <p className="text-xs text-muted-foreground">Patient</p>
-            <Select
-              items={Object.fromEntries(
-                (patients ?? []).map((patient) => [
-                  patient.id,
-                  `${patient.firstName} ${patient.lastName}`,
-                ])
-              )}
-              value={selectedPatientId}
+            <Combobox
+              label="Patient"
+              options={(patients ?? []).map((patient) => ({
+                value: patient.id,
+                label: `${patient.firstName} ${patient.lastName}`,
+              }))}
+              value={selectedPatientId || null}
               onValueChange={(value) => setSelectedPatientId(value ?? "")}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choisir un patient" />
-              </SelectTrigger>
-              <SelectContent>
-                {patients?.map((patient) => (
-                  <SelectItem key={patient.id} value={patient.id}>
-                    {patient.firstName} {patient.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Choisir un patient"
+            />
 
             {pickError && <p className="text-sm text-destructive">{pickError}</p>}
           </div>

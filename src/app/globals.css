@@ -38,13 +38,15 @@
     --chart-4: oklch(0.767 0.024 151.535);
     --chart-5: oklch(0.868 0.015 84.586);
     --radius: 0.5rem;
-    --sidebar: oklch(0.285 0.004 84.581);
-    --sidebar-foreground: oklch(0.95 0.011 84.579);
-    --sidebar-primary: oklch(0.531 0.062 11.008);
+    /* La sidebar suit le thème clair comme le reste de l'app (fond sable,
+       texte encre) — pas de rail sombre fixe. */
+    --sidebar: oklch(0.965 0.010 81.795);
+    --sidebar-foreground: oklch(0.285 0.004 84.581);
+    --sidebar-primary: oklch(0.422 0.062 11.232);
     --sidebar-primary-foreground: oklch(0.994 0.006 84.566);
-    --sidebar-accent: oklch(0.35 0.006 84.581);
-    --sidebar-accent-foreground: oklch(0.95 0.011 84.579);
-    --sidebar-border: oklch(0.35 0.006 84.581);
+    --sidebar-accent: oklch(0.91 0.008 84.581);
+    --sidebar-accent-foreground: oklch(0.285 0.004 84.581);
+    --sidebar-border: oklch(0.868 0.015 84.586);
     --sidebar-ring: oklch(0.55 0.06 11.232);
   }
 

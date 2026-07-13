@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/toast";
+import { toast } from "sonner";
 
 interface PatientFormState {
   firstName: string;
@@ -42,7 +42,6 @@ export function AddPatientDialog({ onCreated, triggerVariant = "default" }: AddP
   const [form, setForm] = useState<PatientFormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useToast();
 
   function updateField<K extends keyof PatientFormState>(
     key: K,
@@ -77,12 +76,10 @@ export function AddPatientDialog({ onCreated, triggerVariant = "default" }: AddP
 
     const data = await response.json();
     onCreated(data.patient);
-    toast.add({
-      type: "success",
-      title: "Patient créé",
+    toast.success("Patient créé", {
       description: `${form.firstName} ${form.lastName} rejoint votre patientèle.`,
-      actionProps: {
-        children: "Voir la fiche",
+      action: {
+        label: "Voir la fiche",
         onClick: () => router.push(`/patients?patientId=${data.patient.id}`),
       },
     });

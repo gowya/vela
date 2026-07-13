@@ -6,13 +6,7 @@ import { DownloadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
   DialogClose,
@@ -110,33 +104,20 @@ export function DeleteAccountDialog({
           </a>
 
           <div>
-            <Label htmlFor="delete-account-reason" className="mb-1">
-              Pourquoi supprimez-vous votre compte ?
-            </Label>
-            <Select
-              items={Object.fromEntries(
-                ACCOUNT_DELETION_REASONS.map((value) => [
-                  value,
-                  ACCOUNT_DELETION_REASON_LABELS[value],
-                ])
-              )}
-              value={reason}
+            <Combobox
+              id="delete-account-reason"
+              label="Pourquoi supprimez-vous votre compte ?"
+              options={ACCOUNT_DELETION_REASONS.map((value) => ({
+                value,
+                label: ACCOUNT_DELETION_REASON_LABELS[value],
+              }))}
+              value={reason || null}
               onValueChange={(value) => {
                 setReason((value as AccountDeletionReason) ?? "");
                 setError(null);
               }}
-            >
-              <SelectTrigger id="delete-account-reason" aria-label="Motif de départ">
-                <SelectValue placeholder="Sélectionnez un motif" />
-              </SelectTrigger>
-              <SelectContent>
-                {ACCOUNT_DELETION_REASONS.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {ACCOUNT_DELETION_REASON_LABELS[value]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Sélectionnez un motif"
+            />
           </div>
 
           <div>

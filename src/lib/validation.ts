@@ -75,6 +75,14 @@ export const customFieldDefinitionCreateSchema = z
     allowMultiple: data.fieldType === "choice" ? data.allowMultiple : false,
   }));
 
+export const customFieldDefinitionUpdateSchema = z.object({
+  showInTable: z.boolean().optional(),
+});
+
+export const customFieldReorderSchema = z.object({
+  order: z.array(z.string().uuid()).min(1, "L'ordre est requis."),
+});
+
 // --- Consultations & templates ---
 // Le contenu est un document Tiptap/ProseMirror (éditeur riche façon Notion :
 // titres, listes, checklist, pièces jointes, formatage inline), que la

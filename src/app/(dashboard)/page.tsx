@@ -205,7 +205,7 @@ export default async function Home({
   );
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-8">
+    <main className="flex min-h-screen min-w-0 flex-col gap-8 px-16 py-8">
       <header className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground [&::first-letter]:uppercase">
           {today}, {currentTime}

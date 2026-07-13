@@ -54,6 +54,8 @@ export function mapCustomFieldDefinitionRow(row: {
   field_type: string;
   options: string[] | null;
   allow_multiple: boolean;
+  display_order: number;
+  show_in_table: boolean;
   created_at: Date;
 }): CustomFieldDefinition {
   return {
@@ -63,6 +65,8 @@ export function mapCustomFieldDefinitionRow(row: {
     fieldType: row.field_type as CustomFieldDefinition["fieldType"],
     options: row.options,
     allowMultiple: row.allow_multiple,
+    displayOrder: row.display_order,
+    showInTable: row.show_in_table,
     createdAt: row.created_at,
   };
 }

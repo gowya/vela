@@ -1,9 +1,11 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BetaNoticeDialog } from "@/components/BetaNoticeDialog";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import pool from "@/lib/db";
 
 export default async function DashboardLayout({
@@ -37,15 +39,16 @@ export default async function DashboardLayout({
   const showBetaNotice = profile.dashboard_visits_count >= 2 && !profile.beta_notice_dismissed_at;
 
   const userName = session.user?.name ?? session.user?.email ?? "?";
+  const sidebarOpen = (await cookies()).get("sidebar_state")?.value !== "false";
 
   return (
-    <div className="flex min-h-screen">
+    <SidebarProvider defaultOpen={sidebarOpen}>
       <AppSidebar userName={userName} />
-      <div className="min-w-0 flex-1">
+      <SidebarInset>
         {!profile.email_verified_at && <EmailVerificationBanner />}
         {children}
-      </div>
+      </SidebarInset>
       <BetaNoticeDialog initialOpen={showBetaNotice} />
-    </div>
+    </SidebarProvider>
   );
 }

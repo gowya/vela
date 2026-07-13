@@ -4,7 +4,7 @@ import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { ToastProvider, Toaster } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/sonner";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -50,7 +50,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `try {
               var theme = localStorage.getItem("theme");
-              if (theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+              if (theme === "dark") {
                 document.documentElement.classList.add("dark");
               }
             } catch (e) {}`,
@@ -58,10 +58,8 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-sans" suppressHydrationWarning>
-        <ToastProvider>
-          {children}
-          <Toaster placement="top" />
-        </ToastProvider>
+        {children}
+        <Toaster position="top-center" />
         <Analytics />
       </body>
     </html>
