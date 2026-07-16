@@ -230,7 +230,8 @@ export function TemplateEditor({ templateId = null }: TemplateEditorProps) {
         placeholder="Nom du modèle"
         value={name}
         onChange={(event) => setName(event.target.value)}
-        className="border-none bg-transparent text-lg font-medium shadow-none focus-visible:ring-0"
+        variant="ghost"
+        className="text-lg font-medium"
         autoFocus
       />
 

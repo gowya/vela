@@ -451,7 +451,8 @@ export function ConsultationEditor({
         placeholder="Titre de la consultation (optionnel)"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
-        className="border-none bg-transparent text-lg font-medium shadow-none focus-visible:ring-0"
+        variant="ghost"
+        className="text-lg font-medium"
       />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
