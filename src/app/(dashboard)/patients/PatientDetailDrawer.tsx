@@ -27,13 +27,7 @@ import type {
   Patient,
 } from "@/types";
 import { calculateAge, isBirthdaySoon } from "@/lib/patient-utils";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +55,7 @@ import {
   TagIcon,
   TrashIcon,
   UserIcon,
+  XIcon,
   type Icon,
 } from "@phosphor-icons/react";
 
@@ -271,6 +266,16 @@ interface PatientDetailDrawerProps {
   // amènent ici depuis un autre écran avec une intention précise (ex.
   // "planifier le prochain rendez-vous" depuis le tableau de bord ou la liste).
   autoEditField?: keyof EditFormState;
+  // Suppression du patient depuis le drawer lui-même (retour test user #01,
+  // P2) : même système que le menu contextuel de la liste des patients, en
+  // parallèle plutôt qu'en remplacement. Optionnel : les appelants qui ne
+  // maintiennent pas de liste locale à nettoyer peuvent l'omettre.
+  onDeleted?: (patientId: string) => void;
+  // "overlay" (défaut) : panneau Sheet classique, superposé au reste de la
+  // page. "inline" : même contenu, sans overlay ni backdrop, pensé pour vivre
+  // à côté d'un autre contenu interactif (ex. la consultation) — l'utilisateur
+  // doit pouvoir agir sur les deux en même temps (retour test user #01, C4).
+  variant?: "overlay" | "inline";
 }
 
 export function PatientDetailDrawer({
@@ -278,6 +283,8 @@ export function PatientDetailDrawer({
   onClose,
   onUpdated,
   autoEditField,
+  onDeleted,
+  variant = "overlay",
 }: PatientDetailDrawerProps) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [customFields, setCustomFields] = useState<PatientDetailField[]>([]);
@@ -295,6 +302,8 @@ export function PatientDetailDrawer({
   const [isCreatingField, setIsCreatingField] = useState(false);
   const [fieldToDelete, setFieldToDelete] = useState<CustomFieldDefinition | null>(null);
   const [isDeletingField, setIsDeletingField] = useState(false);
+  const [confirmDeletePatientOpen, setConfirmDeletePatientOpen] = useState(false);
+  const [isDeletingPatient, setIsDeletingPatient] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
@@ -354,6 +363,23 @@ export function PatientDetailDrawer({
     });
     toast.success("Champ personnalisé supprimé.");
     setFieldToDelete(null);
+  }
+
+  async function handleDeletePatientConfirmed() {
+    if (!patient) return;
+    setIsDeletingPatient(true);
+    const response = await fetch(`/api/patients/${patient.id}`, { method: "DELETE" });
+    setIsDeletingPatient(false);
+
+    if (!response.ok) {
+      toast.error("La suppression du patient a échoué.");
+      return;
+    }
+
+    toast.success("Patient supprimé.");
+    setConfirmDeletePatientOpen(false);
+    onDeleted?.(patient.id);
+    onClose();
   }
 
   useEffect(() => {
@@ -605,24 +631,39 @@ export function PatientDetailDrawer({
     onClose();
   }
 
-  return (
+  const panelContent = (
     <>
-    <Sheet
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) requestClose();
-      }}
-    >
-      <SheetContent side="right" className="flex flex-col p-0 sm:max-w-lg" showCloseButton={false}>
-        <SheetHeader className="flex-row items-center justify-between gap-3 pr-4">
+        <div className="flex flex-row items-center justify-between gap-3 border-b border-border p-4">
           <div className="flex min-w-0 flex-col gap-1">
-            <SheetTitle className="truncate">
+            <h2 className="truncate font-heading text-sm font-medium text-foreground">
               {patient ? `${patient.firstName} ${patient.lastName}` : "Patient"}
-            </SheetTitle>
-            {identitySummary && <SheetDescription>{identitySummary}</SheetDescription>}
+            </h2>
+            {identitySummary && (
+              <p className="text-xs/relaxed text-muted-foreground">{identitySummary}</p>
+            )}
           </div>
           {patient && form && (
             <div className="flex shrink-0 items-center gap-2">
+              {variant === "inline" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Fermer"
+                  onClick={requestClose}
+                >
+                  <XIcon size={16} />
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Supprimer le patient"
+                onClick={() => setConfirmDeletePatientOpen(true)}
+              >
+                <TrashIcon size={16} />
+              </Button>
               {isDirty && (
                 <Button type="button" variant="ghost" onClick={requestClose}>
                   Annuler les modifications
@@ -633,7 +674,7 @@ export function PatientDetailDrawer({
               </Button>
             </div>
           )}
-        </SheetHeader>
+        </div>
 
         {error && !form && <p className="p-4 text-sm text-destructive">{error}</p>}
         {!patient && !error && (
@@ -829,6 +870,7 @@ export function PatientDetailDrawer({
                       label="Prochain rendez-vous"
                       value={form.nextAppointmentAt}
                       onValueChange={(value) => updateField("nextAppointmentAt", value)}
+                      disablePast
                     />
                   </div>
                 </div>
@@ -987,8 +1029,29 @@ export function PatientDetailDrawer({
             </div>
           </form>
         )}
-      </SheetContent>
-    </Sheet>
+    </>
+  );
+
+  return (
+    <>
+    {variant === "overlay" ? (
+      <Sheet
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) requestClose();
+        }}
+      >
+        <SheetContent side="right" className="flex flex-col p-0 sm:max-w-lg" showCloseButton={false}>
+          {panelContent}
+        </SheetContent>
+      </Sheet>
+    ) : (
+      open && (
+        <div className="flex h-full w-full flex-col overflow-hidden border-l border-border bg-popover text-popover-foreground">
+          {panelContent}
+        </div>
+      )
+    )}
 
     <Dialog
       open={fieldToDelete !== null}
@@ -1015,6 +1078,40 @@ export function PatientDetailDrawer({
             onClick={() => void handleDeleteFieldConfirmed()}
           >
             {isDeletingField ? "Suppression…" : "Supprimer"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog
+      open={confirmDeletePatientOpen}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) setConfirmDeletePatientOpen(false);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Supprimer ce patient ?</DialogTitle>
+          <DialogDescription>
+            {patient &&
+              `${patient.firstName} ${patient.lastName} et l'ensemble de ses consultations seront définitivement supprimés. Cette action est irréversible.`}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setConfirmDeletePatientOpen(false)}
+          >
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isDeletingPatient}
+            onClick={() => void handleDeletePatientConfirmed()}
+          >
+            {isDeletingPatient ? "Suppression…" : "Supprimer"}
           </Button>
         </DialogFooter>
       </DialogContent>

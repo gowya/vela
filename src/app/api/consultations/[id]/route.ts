@@ -6,8 +6,8 @@ import { deriveContentText } from "@/lib/consultation-utils";
 import { mapConsultationRow } from "@/lib/mappers";
 import { consultationUpdateSchema } from "@/lib/validation";
 
-const CONSULTATION_COLUMNS = `c.id, c.patient_id, c.template_id, c.title, c.content, c.content_text,
-  c.date, c.updated_at, c.created_at`;
+const CONSULTATION_COLUMNS = `c.id, c.patient_id, c.template_id, c.appointment_id, c.title, c.content,
+  c.content_text, c.date, c.updated_at, c.created_at`;
 
 export async function GET(
   _request: Request,

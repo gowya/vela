@@ -19,6 +19,22 @@ const optionalDateTime = z.preprocess(
   z.string().datetime({ message: "Date invalide." }).nullable().optional()
 );
 
+// Réservé aux dates de rendez-vous à venir (nextAppointmentAt) : contrairement
+// à lastAppointmentAt (un rendez-vous passé, légitimement antérieur à
+// aujourd'hui), planifier un rendez-vous dans le passé n'a pas de sens
+// (retour test user #01, bug B2).
+const optionalFutureDateTime = z.preprocess(
+  emptyStringToNull,
+  z
+    .string()
+    .datetime({ message: "Date invalide." })
+    .refine((value) => new Date(value).getTime() >= Date.now(), {
+      message: "Le rendez-vous ne peut pas être planifié dans le passé.",
+    })
+    .nullable()
+    .optional()
+);
+
 const optionalEmail = z.preprocess(
   emptyStringToNull,
   z.string().trim().toLowerCase().email("Email invalide.").nullable().optional()
@@ -50,7 +66,7 @@ export const patientCreateSchema = z.object({
   address: optionalTrimmedString,
   status: optionalTrimmedString,
   lastAppointmentAt: optionalDateTime,
-  nextAppointmentAt: optionalDateTime,
+  nextAppointmentAt: optionalFutureDateTime,
   customFields: z.array(customFieldValueInputSchema).optional().default([]),
 });
 
@@ -146,16 +162,37 @@ export const consultationTemplateUpdateSchema = z.object({
 export const consultationCreateSchema = z.object({
   patientId: z.string().uuid("Patient invalide."),
   templateId: z.string().uuid("Modèle invalide.").nullable().optional(),
+  appointmentId: z.string().uuid("Rendez-vous invalide.").nullable().optional(),
   title: optionalTrimmedString,
   date: optionalDateTime,
   content: consultationContentSchema,
 });
 
-// patientId et templateId ne sont jamais modifiables après création (une consultation
-// ne change pas de patient, et le template n'est qu'un point de départ initial).
+// patientId, templateId et appointmentId ne sont jamais modifiables après création (une
+// consultation ne change pas de patient, le template n'est qu'un point de départ initial,
+// et le rendez-vous d'origine reste le même même si ce rendez-vous est renommé/annulé).
 export const consultationUpdateSchema = z.object({
   updatedAt: z.string().datetime("Horodatage invalide."),
   title: optionalTrimmedString,
   date: optionalDateTime,
   content: consultationContentSchema.optional(),
+});
+
+// --- Rendez-vous ---
+// Contrairement à lastAppointmentAt sur les patients (un rendez-vous passé, légitime),
+// planifier ou reprogrammer un rendez-vous dans le passé n'a pas de sens (bug B2).
+const requiredFutureDateTime = z
+  .string()
+  .datetime({ message: "Date invalide." })
+  .refine((value) => new Date(value).getTime() >= Date.now(), {
+    message: "Le rendez-vous ne peut pas être planifié dans le passé.",
+  });
+
+export const appointmentCreateSchema = z.object({
+  patientId: z.string().uuid("Patient invalide."),
+  scheduledAt: requiredFutureDateTime,
+});
+
+export const appointmentRescheduleSchema = z.object({
+  scheduledAt: requiredFutureDateTime,
 });

@@ -13,7 +13,7 @@ export default async function ConsultationPage({
   const session = await getServerSession(authOptions);
 
   const { rows } = await pool.query(
-    `SELECT c.patient_id, c.template_id
+    `SELECT c.patient_id, c.template_id, c.appointment_id
      FROM consultations c
      JOIN patients p ON p.id = c.patient_id
      WHERE c.id = $1 AND p.practitioner_id = $2 AND c.deleted_at IS NULL`,
@@ -29,6 +29,7 @@ export default async function ConsultationPage({
       consultationId={id}
       patientId={rows[0].patient_id}
       templateId={rows[0].template_id}
+      appointmentId={rows[0].appointment_id}
     />
   );
 }

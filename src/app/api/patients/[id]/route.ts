@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { syncPatientNextAppointment } from "@/lib/appointments";
 import { mapPatientRow } from "@/lib/mappers";
 import { patientUpdateSchema } from "@/lib/validation";
 
@@ -10,6 +11,8 @@ const PATIENT_COLUMNS = `id, practitioner_id, first_name, last_name, email, phon
   last_appointment_at, next_appointment_at, created_at`;
 
 // Mappe les clés camelCase du payload vers les colonnes SQL correspondantes.
+// nextAppointmentAt n'y figure pas : ce n'est plus un champ écrit directement (voir plus
+// bas), c'est une valeur dérivée de la table `appointments` via syncPatientNextAppointment.
 const FIELD_TO_COLUMN: Record<string, string> = {
   firstName: "first_name",
   lastName: "last_name",
@@ -22,7 +25,6 @@ const FIELD_TO_COLUMN: Record<string, string> = {
   address: "address",
   status: "status",
   lastAppointmentAt: "last_appointment_at",
-  nextAppointmentAt: "next_appointment_at",
 };
 
 async function getOwnedPatientCustomFields(patientId: string) {
@@ -92,7 +94,8 @@ export async function PATCH(
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { customFields, ...patientFields } = parsed.data;
+  const { customFields, nextAppointmentAt, ...patientFields } = parsed.data;
+  const nextAppointmentAtProvided = "nextAppointmentAt" in parsed.data;
 
   const client = await pool.connect();
   try {
@@ -121,6 +124,43 @@ export async function PATCH(
          WHERE id = $${values.length + 1} AND practitioner_id = $${values.length + 2}`,
         [...values, id, session.user.id]
       );
+    }
+
+    // Le rendez-vous "à venir" du patient est aussi une vraie ligne dans `appointments`
+    // (voir migration 010) : on garde les deux synchronisés ici plutôt que de dupliquer
+    // cette logique partout où nextAppointmentAt peut être modifié. Un seul rendez-vous
+    // actif futur par patient est géré depuis ce champ du drawer (l'onglet Rendez-vous
+    // permet d'en planifier plusieurs ; syncPatientNextAppointment recalcule ensuite le
+    // plus proche via MIN(), donc le résultat reste correct même dans ce cas).
+    if (nextAppointmentAtProvided) {
+      const { rows: activeAppointmentRows } = await client.query(
+        `SELECT id FROM appointments
+         WHERE patient_id = $1 AND cancelled_at IS NULL AND scheduled_at > now()
+         ORDER BY scheduled_at ASC LIMIT 1`,
+        [id]
+      );
+      const activeAppointmentId = activeAppointmentRows[0]?.id as string | undefined;
+
+      if (nextAppointmentAt) {
+        if (activeAppointmentId) {
+          await client.query(
+            `UPDATE appointments SET scheduled_at = $1, updated_at = now() WHERE id = $2`,
+            [nextAppointmentAt, activeAppointmentId]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO appointments (patient_id, scheduled_at) VALUES ($1, $2)`,
+            [id, nextAppointmentAt]
+          );
+        }
+      } else if (activeAppointmentId) {
+        await client.query(
+          `UPDATE appointments SET cancelled_at = now(), updated_at = now() WHERE id = $1`,
+          [activeAppointmentId]
+        );
+      }
+
+      await syncPatientNextAppointment(client, id);
     }
 
     if (customFields && customFields.length > 0) {

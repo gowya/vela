@@ -895,6 +895,11 @@ export function PatientsList() {
               ) ?? previous
           )
         }
+        onDeleted={(deletedPatientId) =>
+          setPatients(
+            (previous) => previous?.filter((patient) => patient.id !== deletedPatientId) ?? previous
+          )
+        }
         autoEditField={selectedPatientId ? autoEditField : undefined}
       />
 

@@ -113,6 +113,10 @@ interface DateTimePickerProps {
   id?: string
   className?: string
   disabled?: boolean
+  // Empêche de sélectionner un jour déjà passé (ex. planification de
+  // rendez-vous : voir bug B2, retour test user #01). Ne s'applique pas aux
+  // autres usages du composant (ex. date de naissance).
+  disablePast?: boolean
 }
 
 function DateTimePicker({
@@ -124,6 +128,7 @@ function DateTimePicker({
   id,
   className,
   disabled,
+  disablePast,
 }: DateTimePickerProps) {
   const generatedId = React.useId()
   const inputId = id ?? generatedId
@@ -161,6 +166,11 @@ function DateTimePicker({
             mode="single"
             selected={selected}
             captionLayout="dropdown"
+            disabled={
+              disablePast
+                ? { before: new Date(new Date().setHours(0, 0, 0, 0)) }
+                : undefined
+            }
             onSelect={(date) => {
               if (!date) {
                 onValueChange("")

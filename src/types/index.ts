@@ -29,6 +29,29 @@ export interface Patient {
   customFieldValues?: Record<string, string>;
 }
 
+// Rendez-vous planifié pour un patient. Une consultation peut être liée à un
+// rendez-vous (appointmentId non null) ou exister seule (suivi ponctuel sans
+// rdv préalable) — voir consultations.appointment_id, nullable.
+export interface Appointment {
+  id: string;
+  patientId: string;
+  scheduledAt: Date;
+  cancelledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Version allégée retournée par la liste de l'onglet Rendez-vous : inclut le nom du
+// patient (jointure), sans les métadonnées de création/mise à jour.
+export interface AppointmentListItem {
+  id: string;
+  patientId: string;
+  patientFirstName: string;
+  patientLastName: string;
+  scheduledAt: Date;
+  cancelledAt: Date | null;
+}
+
 export type CustomFieldType = "text" | "choice" | "date" | "number";
 
 export interface CustomFieldDefinition {
@@ -89,6 +112,7 @@ export interface Consultation {
   id: string;
   patientId: string;
   templateId: string | null;
+  appointmentId: string | null;
   title: string | null;
   content: ConsultationContent;
   contentText: string;

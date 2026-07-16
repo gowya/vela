@@ -82,4 +82,60 @@ describe("PATCH /api/patients/[id]", () => {
     expect(body.patient.firstName).toBe("Alice");
     expect(body.patient.status).toBe("active");
   });
+
+  it("crée un rendez-vous réel quand nextAppointmentAt est fixé", async () => {
+    const practitioner = await createPractitioner();
+    const patient = await createPatient(practitioner.id);
+    const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    asPractitioner(practitioner.id);
+    const response = await PATCH(
+      patchRequest({ nextAppointmentAt: scheduledAt }),
+      params(patient.id)
+    );
+    expect(response.status).toBe(200);
+
+    const { rows } = await pool.query(
+      "SELECT scheduled_at, cancelled_at FROM appointments WHERE patient_id = $1",
+      [patient.id]
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].cancelled_at).toBeNull();
+    expect(new Date(rows[0].scheduled_at).toISOString()).toBe(scheduledAt);
+  });
+
+  it("met à jour (et ne duplique pas) le rendez-vous actif existant", async () => {
+    const practitioner = await createPractitioner();
+    const patient = await createPatient(practitioner.id);
+    const firstDate = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const secondDate = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+
+    asPractitioner(practitioner.id);
+    await PATCH(patchRequest({ nextAppointmentAt: firstDate }), params(patient.id));
+    await PATCH(patchRequest({ nextAppointmentAt: secondDate }), params(patient.id));
+
+    const { rows } = await pool.query(
+      "SELECT scheduled_at FROM appointments WHERE patient_id = $1 AND cancelled_at IS NULL",
+      [patient.id]
+    );
+    expect(rows).toHaveLength(1);
+    expect(new Date(rows[0].scheduled_at).toISOString()).toBe(secondDate);
+  });
+
+  it("annule le rendez-vous actif quand nextAppointmentAt est mis à null", async () => {
+    const practitioner = await createPractitioner();
+    const patient = await createPatient(practitioner.id);
+    const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    asPractitioner(practitioner.id);
+    await PATCH(patchRequest({ nextAppointmentAt: scheduledAt }), params(patient.id));
+    await PATCH(patchRequest({ nextAppointmentAt: null }), params(patient.id));
+
+    const { rows } = await pool.query(
+      "SELECT cancelled_at FROM appointments WHERE patient_id = $1",
+      [patient.id]
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].cancelled_at).not.toBeNull();
+  });
 });

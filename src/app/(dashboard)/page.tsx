@@ -6,14 +6,23 @@ import pool from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/email";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardQuickActions } from "./DashboardQuickActions";
-import { CalendarCheckIcon, ClockIcon } from "@phosphor-icons/react/dist/ssr";
+import { CalendarCheckIcon, ClipboardTextIcon, ClockIcon } from "@phosphor-icons/react/dist/ssr";
+
+interface RecentConsultation {
+  id: string;
+  patientFirstName: string;
+  patientLastName: string;
+  title: string | null;
+  date: Date;
+}
 
 interface TodayAppointment {
   id: string;
+  patientId: string;
   firstName: string;
   lastName: string;
   identifiedIssue: string | null;
-  nextAppointmentAt: Date;
+  scheduledAt: Date;
 }
 
 interface ActivationState {
@@ -66,33 +75,36 @@ async function getActivationState(practitionerId: string): Promise<ActivationSta
   return { patientCount, consultationCount, latestPatient };
 }
 
-// Les rendez-vous du jour sont dérivés de `next_appointment_at` sur la fiche
-// patient (il n'existe pas d'agenda séparé) : on compare en fuseau Europe/Paris
-// pour que "aujourd'hui" corresponde à la journée du praticien, quel que soit
-// le fuseau du serveur de base de données.
+// Les rendez-vous du jour viennent de la table `appointments` (voir migration
+// 010) : on compare en fuseau Europe/Paris pour que "aujourd'hui" corresponde
+// à la journée du praticien, quel que soit le fuseau du serveur de base de
+// données. Les rendez-vous annulés (cancelled_at) n'apparaissent jamais ici.
 async function getTodayAppointments(practitionerId: string): Promise<TodayAppointment[]> {
   const { rows } = await pool.query<{
     id: string;
+    patient_id: string;
     first_name: string;
     last_name: string;
     identified_issue: string | null;
-    next_appointment_at: Date;
+    scheduled_at: Date;
   }>(
-    `SELECT id, first_name, last_name, identified_issue, next_appointment_at
-     FROM patients
-     WHERE practitioner_id = $1
-       AND next_appointment_at IS NOT NULL
-       AND (next_appointment_at AT TIME ZONE 'Europe/Paris')::date = (now() AT TIME ZONE 'Europe/Paris')::date
-     ORDER BY next_appointment_at ASC`,
+    `SELECT a.id, a.patient_id, p.first_name, p.last_name, p.identified_issue, a.scheduled_at
+     FROM appointments a
+     JOIN patients p ON p.id = a.patient_id
+     WHERE p.practitioner_id = $1
+       AND a.cancelled_at IS NULL
+       AND (a.scheduled_at AT TIME ZONE 'Europe/Paris')::date = (now() AT TIME ZONE 'Europe/Paris')::date
+     ORDER BY a.scheduled_at ASC`,
     [practitionerId]
   );
 
   return rows.map((row) => ({
     id: row.id,
+    patientId: row.patient_id,
     firstName: row.first_name,
     lastName: row.last_name,
     identifiedIssue: row.identified_issue,
-    nextAppointmentAt: row.next_appointment_at,
+    scheduledAt: row.scheduled_at,
   }));
 }
 
@@ -101,27 +113,59 @@ async function getTodayAppointments(practitionerId: string): Promise<TodayAppoin
 async function getWeekAppointments(practitionerId: string): Promise<TodayAppointment[]> {
   const { rows } = await pool.query<{
     id: string;
+    patient_id: string;
     first_name: string;
     last_name: string;
     identified_issue: string | null;
-    next_appointment_at: Date;
+    scheduled_at: Date;
   }>(
-    `SELECT id, first_name, last_name, identified_issue, next_appointment_at
-     FROM patients
-     WHERE practitioner_id = $1
-       AND next_appointment_at IS NOT NULL
-       AND (next_appointment_at AT TIME ZONE 'Europe/Paris')::date > (now() AT TIME ZONE 'Europe/Paris')::date
-       AND (next_appointment_at AT TIME ZONE 'Europe/Paris')::date <= ((now() AT TIME ZONE 'Europe/Paris')::date + 7)
-     ORDER BY next_appointment_at ASC`,
+    `SELECT a.id, a.patient_id, p.first_name, p.last_name, p.identified_issue, a.scheduled_at
+     FROM appointments a
+     JOIN patients p ON p.id = a.patient_id
+     WHERE p.practitioner_id = $1
+       AND a.cancelled_at IS NULL
+       AND (a.scheduled_at AT TIME ZONE 'Europe/Paris')::date > (now() AT TIME ZONE 'Europe/Paris')::date
+       AND (a.scheduled_at AT TIME ZONE 'Europe/Paris')::date <= ((now() AT TIME ZONE 'Europe/Paris')::date + 7)
+     ORDER BY a.scheduled_at ASC`,
     [practitionerId]
   );
 
   return rows.map((row) => ({
     id: row.id,
+    patientId: row.patient_id,
     firstName: row.first_name,
     lastName: row.last_name,
     identifiedIssue: row.identified_issue,
-    nextAppointmentAt: row.next_appointment_at,
+    scheduledAt: row.scheduled_at,
+  }));
+}
+
+// Action rapide "dernières consultations" (retour test user #01, N4) : les 5 plus
+// récentes tous patients confondus, pour retrouver un dossier récent sans passer par
+// la liste complète des consultations.
+async function getRecentConsultations(practitionerId: string): Promise<RecentConsultation[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    title: string | null;
+    date: Date;
+  }>(
+    `SELECT c.id, p.first_name, p.last_name, c.title, c.date
+     FROM consultations c
+     JOIN patients p ON p.id = c.patient_id
+     WHERE p.practitioner_id = $1 AND c.deleted_at IS NULL
+     ORDER BY c.date DESC
+     LIMIT 5`,
+    [practitionerId]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    patientFirstName: row.first_name,
+    patientLastName: row.last_name,
+    title: row.title,
+    date: row.date,
   }));
 }
 
@@ -142,7 +186,7 @@ function groupByDay(appointments: TodayAppointment[]): { dayKey: string; date: D
   const groups = new Map<string, { date: Date; items: TodayAppointment[] }>();
 
   for (const appointment of appointments) {
-    const date = new Date(appointment.nextAppointmentAt);
+    const date = new Date(appointment.scheduledAt);
     const dayKey = date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
     const group = groups.get(dayKey);
     if (group) {
@@ -174,13 +218,15 @@ export default async function Home({
     redirect("/");
   }
 
-  const [todayAppointments, weekAppointments, activationState] = practitionerId
-    ? await Promise.all([
-        getTodayAppointments(practitionerId),
-        getWeekAppointments(practitionerId),
-        getActivationState(practitionerId),
-      ])
-    : [[], [], { patientCount: 0, consultationCount: 0, latestPatient: null }];
+  const [todayAppointments, weekAppointments, activationState, recentConsultations] =
+    practitionerId
+      ? await Promise.all([
+          getTodayAppointments(practitionerId),
+          getWeekAppointments(practitionerId),
+          getActivationState(practitionerId),
+          getRecentConsultations(practitionerId),
+        ])
+      : [[], [], { patientCount: 0, consultationCount: 0, latestPatient: null }, []];
   const weekAppointmentsByDay = groupByDay(weekAppointments);
   const now = new Date();
   const today = now.toLocaleDateString("fr-FR", {
@@ -232,12 +278,17 @@ export default async function Home({
               <CalendarCheckIcon size={18} className="text-muted-foreground" />
               Rendez-vous d&apos;aujourd&apos;hui
             </h2>
-            {todayAppointments.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {todayAppointments.length}{" "}
-                {todayAppointments.length > 1 ? "rendez-vous" : "rendez-vous"}
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {todayAppointments.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {todayAppointments.length}{" "}
+                  {todayAppointments.length > 1 ? "rendez-vous" : "rendez-vous"}
+                </span>
+              )}
+              <Link href="/appointments" className="text-xs text-primary hover:underline">
+                Voir tous les rendez-vous
+              </Link>
+            </div>
           </div>
 
           {todayAppointments.length === 0 ? (
@@ -264,19 +315,19 @@ export default async function Home({
           ) : (
             <div className="flex flex-col gap-2">
               {todayAppointments.map((appointment) => {
-              const isPast = new Date(appointment.nextAppointmentAt) < now;
+              const isPast = new Date(appointment.scheduledAt) < now;
 
               return (
                 <Link
                   key={appointment.id}
-                  href={`/consultations/new?patientId=${appointment.id}`}
+                  href={`/consultations/new?appointmentId=${appointment.id}`}
                   className={isPast ? "opacity-60" : undefined}
                 >
                   <Card className="cursor-pointer transition-colors hover:bg-muted/50">
                     <CardContent className="flex items-center gap-4 py-3">
                       <div className="flex w-16 shrink-0 items-center gap-1 text-sm font-medium tabular-nums text-foreground">
                         <ClockIcon size={14} className="text-muted-foreground" />
-                        {formatTime(appointment.nextAppointmentAt)}
+                        {formatTime(appointment.scheduledAt)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium text-foreground">
@@ -324,12 +375,12 @@ export default async function Home({
                 </p>
                 <div className="flex flex-col gap-2">
                   {group.items.map((appointment) => (
-                    <Link key={appointment.id} href={`/consultations/new?patientId=${appointment.id}`}>
+                    <Link key={appointment.id} href={`/consultations/new?appointmentId=${appointment.id}`}>
                       <Card className="cursor-pointer transition-colors hover:bg-muted/50">
                         <CardContent className="flex items-center gap-4 py-3">
                           <div className="flex w-16 shrink-0 items-center gap-1 text-sm font-medium tabular-nums text-foreground">
                             <ClockIcon size={14} className="text-muted-foreground" />
-                            {formatTime(appointment.nextAppointmentAt)}
+                            {formatTime(appointment.scheduledAt)}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-medium text-foreground">
@@ -349,6 +400,43 @@ export default async function Home({
           </div>
         )}
       </section>
+
+      {!hasNoPatients && (
+        <section className="flex flex-col gap-3">
+          <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <ClipboardTextIcon size={18} className="text-muted-foreground" />
+            Dernières consultations
+          </h2>
+
+          {recentConsultations.length === 0 ? (
+            <Card>
+              <CardContent className="py-6 text-center text-sm text-muted-foreground">
+                Aucune consultation enregistrée pour le moment.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {recentConsultations.map((consultation) => (
+                <Link key={consultation.id} href={`/consultations/${consultation.id}`}>
+                  <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                    <CardContent className="flex items-center justify-between gap-4 py-3">
+                      <p className="min-w-0 truncate text-sm font-medium text-foreground">
+                        {consultation.title ?? "Sans titre"}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {consultation.patientFirstName} {consultation.patientLastName}
+                        </span>
+                      </p>
+                      <span className="shrink-0 text-sm text-muted-foreground">
+                        {new Date(consultation.date).toLocaleDateString("fr-FR")}
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </main>
   );
 }

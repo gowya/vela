@@ -34,9 +34,16 @@ const emptyForm: PatientFormState = {
 interface AddPatientDialogProps {
   onCreated: (patient: Patient) => void;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";
+  triggerLabel?: string;
+  triggerSize?: "default" | "xs" | "sm" | "lg";
 }
 
-export function AddPatientDialog({ onCreated, triggerVariant = "default" }: AddPatientDialogProps) {
+export function AddPatientDialog({
+  onCreated,
+  triggerVariant = "default",
+  triggerLabel = "Ajouter un patient",
+  triggerSize = "lg",
+}: AddPatientDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<PatientFormState>(emptyForm);
@@ -89,8 +96,8 @@ export function AddPatientDialog({ onCreated, triggerVariant = "default" }: AddP
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="lg" variant={triggerVariant} />}>
-        Ajouter un patient
+      <DialogTrigger render={<Button size={triggerSize} variant={triggerVariant} />}>
+        {triggerLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>

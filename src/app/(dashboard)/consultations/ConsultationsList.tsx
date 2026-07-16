@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ClipboardTextIcon } from "@phosphor-icons/react";
 import type { ConsultationListItem } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/empty";
 import { NewConsultationDialog } from "./NewConsultationDialog";
 import { TemplatesManagerDialog } from "./TemplatesManagerDialog";
+import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
 
 function formatDate(value: Date | string): string {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -37,35 +37,50 @@ function consultationLabel(consultation: ConsultationListItem): string {
 function ConsultationCard({
   consultation,
   showPatient,
+  onPatientClick,
 }: {
   consultation: ConsultationListItem;
   showPatient: boolean;
+  onPatientClick: (patientId: string) => void;
 }) {
+  const router = useRouter();
+
   return (
-    <Link href={`/consultations/${consultation.id}`}>
-      <Card className="cursor-pointer transition-colors hover:bg-muted/50">
-        <CardContent className="flex flex-col gap-1 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <p className="min-w-0 truncate text-sm font-medium text-foreground">
-              {consultationLabel(consultation)}
-              {showPatient && (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {consultation.patientFirstName} {consultation.patientLastName}
-                </span>
-              )}
-            </p>
-            <span className="shrink-0 text-sm text-muted-foreground">
-              {formatDate(consultation.date)}
-            </span>
-          </div>
-          {consultation.excerpt && (
-            <p className="line-clamp-1 text-xs text-muted-foreground">
-              {consultation.excerpt}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+    // Pas de <Link> englobant : le nom du patient a besoin de son propre
+    // élément cliquable (ouvrir ses infos sans quitter la liste, retour test
+    // user #01, P3), et un <button> imbriqué dans un <a> serait invalide.
+    <Card
+      className="cursor-pointer transition-colors hover:bg-muted/50"
+      onClick={() => router.push(`/consultations/${consultation.id}`)}
+    >
+      <CardContent className="flex flex-col gap-1 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <p className="min-w-0 truncate text-sm font-medium text-foreground">
+            {consultationLabel(consultation)}
+            {showPatient && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onPatientClick(consultation.patientId);
+                }}
+                className="ml-2 text-xs font-normal text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {consultation.patientFirstName} {consultation.patientLastName}
+              </button>
+            )}
+          </p>
+          <span className="shrink-0 text-sm text-muted-foreground">
+            {formatDate(consultation.date)}
+          </span>
+        </div>
+        {consultation.excerpt && (
+          <p className="line-clamp-1 text-xs text-muted-foreground">
+            {consultation.excerpt}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -100,6 +115,9 @@ export function ConsultationsList() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState("basic");
   const [error, setError] = useState<string | null>(null);
+  // Infos patient "à portée de main" sans quitter la liste des consultations
+  // (retour test user #01, P3) : réutilise le même drawer que la page Patients.
+  const [openPatientId, setOpenPatientId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,6 +220,7 @@ export function ConsultationsList() {
                   // Vue globale : on montre le patient ; si la liste est déjà
                   // filtrée sur un patient, c'est redondant.
                   showPatient={!patientId}
+                  onPatientClick={setOpenPatientId}
                 />
               ))}
             </div>
@@ -211,15 +230,20 @@ export function ConsultationsList() {
             <div className="flex flex-col gap-6">
               {groupByPatient(consultations).map((group) => (
                 <div key={group.patientId} className="flex flex-col gap-2">
-                  <h2 className="text-sm font-semibold text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPatientId(group.patientId)}
+                    className="text-left text-sm font-semibold text-foreground hover:underline"
+                  >
                     {group.patientName}
-                  </h2>
+                  </button>
                   <div className="flex flex-col gap-2">
                     {group.items.map((consultation) => (
                       <ConsultationCard
                         key={consultation.id}
                         consultation={consultation}
                         showPatient={false}
+                        onPatientClick={setOpenPatientId}
                       />
                     ))}
                   </div>
@@ -229,6 +253,19 @@ export function ConsultationsList() {
           </TabsContent>
         </Tabs>
       )}
+
+      <PatientDetailDrawer
+        patientId={openPatientId}
+        onClose={() => setOpenPatientId(null)}
+        onUpdated={() => {}}
+        onDeleted={(deletedPatientId) =>
+          setConsultations(
+            (previous) =>
+              previous?.filter((consultation) => consultation.patientId !== deletedPatientId) ??
+              previous
+          )
+        }
+      />
     </main>
   );
 }

@@ -1,4 +1,6 @@
 import type {
+  Appointment,
+  AppointmentListItem,
   Consultation,
   ConsultationAttachment,
   ConsultationListItem,
@@ -93,6 +95,7 @@ export function mapConsultationRow(row: {
   id: string;
   patient_id: string;
   template_id: string | null;
+  appointment_id: string | null;
   title: string | null;
   content: unknown;
   content_text: string;
@@ -104,12 +107,49 @@ export function mapConsultationRow(row: {
     id: row.id,
     patientId: row.patient_id,
     templateId: row.template_id,
+    appointmentId: row.appointment_id,
     title: row.title,
     content: normalizeConsultationContent(row.content),
     contentText: row.content_text,
     date: row.date,
     updatedAt: row.updated_at,
     createdAt: row.created_at,
+  };
+}
+
+export function mapAppointmentRow(row: {
+  id: string;
+  patient_id: string;
+  scheduled_at: Date;
+  cancelled_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}): Appointment {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    scheduledAt: row.scheduled_at,
+    cancelledAt: row.cancelled_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapAppointmentListItemRow(row: {
+  id: string;
+  patient_id: string;
+  patient_first_name: string;
+  patient_last_name: string;
+  scheduled_at: Date;
+  cancelled_at: Date | null;
+}): AppointmentListItem {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    patientFirstName: row.patient_first_name,
+    patientLastName: row.patient_last_name,
+    scheduledAt: row.scheduled_at,
+    cancelledAt: row.cancelled_at,
   };
 }
 

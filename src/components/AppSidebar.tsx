@@ -8,9 +8,11 @@ import {
   HouseIcon,
   UsersIcon,
   ClipboardTextIcon,
+  CalendarCheckIcon,
   UserIcon,
   CreditCardIcon,
   BellIcon,
+  ChatCircleTextIcon,
   SignOutIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
@@ -45,6 +47,7 @@ interface AppSidebarProps {
 
 const navItems = [
   { href: "/", label: "Tableau de bord", icon: HouseIcon },
+  { href: "/appointments", label: "Rendez-vous", icon: CalendarCheckIcon },
   { href: "/patients", label: "Patients", icon: UsersIcon },
   { href: "/consultations", label: "Consultations", icon: ClipboardTextIcon },
 ];
@@ -120,6 +123,10 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
                 <DropdownMenuItem render={<Link href="/account?tab=notifications" />}>
                   <BellIcon size={14} />
                   Notifications
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/account?tab=feedback" />}>
+                  <ChatCircleTextIcon size={14} />
+                  Retours
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
