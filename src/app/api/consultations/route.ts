@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { patientId, templateId, title, date, content } = parsed.data;
+  const { patientId, templateId, appointmentId, title, date, content } = parsed.data;
 
   const { rows: patientRows } = await pool.query(
     "SELECT id FROM patients WHERE id = $1 AND practitioner_id = $2",
@@ -87,21 +87,57 @@ export async function POST(request: Request) {
     }
   }
 
+  if (appointmentId) {
+    const { rows: appointmentRows } = await pool.query(
+      `SELECT a.id FROM appointments a
+       JOIN patients p ON p.id = a.patient_id
+       WHERE a.id = $1 AND a.patient_id = $2 AND p.practitioner_id = $3`,
+      [appointmentId, patientId, session.user.id]
+    );
+    if (appointmentRows.length === 0) {
+      return NextResponse.json({ error: "Rendez-vous introuvable." }, { status: 404 });
+    }
+  }
+
   const contentText = deriveContentText(content);
 
-  const { rows } = await pool.query(
-    `INSERT INTO consultations (patient_id, template_id, title, content, content_text, date)
-     VALUES ($1, $2, $3, $4, $5, COALESCE($6, now()))
-     RETURNING id, patient_id, template_id, title, content, content_text, date, updated_at, created_at`,
-    [
-      patientId,
-      templateId ?? null,
-      title ?? null,
-      JSON.stringify(content),
-      contentText,
-      date ?? null,
-    ]
-  );
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO consultations (patient_id, template_id, appointment_id, title, content, content_text, date)
+       VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, now()))
+       RETURNING id, patient_id, template_id, appointment_id, title, content, content_text, date, updated_at, created_at`,
+      [
+        patientId,
+        templateId ?? null,
+        appointmentId ?? null,
+        title ?? null,
+        JSON.stringify(content),
+        contentText,
+        date ?? null,
+      ]
+    );
 
-  return NextResponse.json({ consultation: mapConsultationRow(rows[0]) }, { status: 201 });
+    return NextResponse.json({ consultation: mapConsultationRow(rows[0]) }, { status: 201 });
+  } catch (error) {
+    // Filet de sécurité : le find-or-create côté page (consultations/new) devrait
+    // toujours éviter ce cas, mais une double soumission concurrente (deux onglets,
+    // double-clic) peut heurter l'index unique sur appointment_id. On renvoie alors
+    // la consultation déjà créée plutôt que de propager une erreur 500.
+    const isUniqueViolation =
+      typeof error === "object" && error !== null && "code" in error && error.code === "23505";
+
+    if (isUniqueViolation && appointmentId) {
+      const { rows } = await pool.query(
+        `SELECT id, patient_id, template_id, appointment_id, title, content, content_text, date, updated_at, created_at
+         FROM consultations
+         WHERE appointment_id = $1 AND deleted_at IS NULL`,
+        [appointmentId]
+      );
+      if (rows.length > 0) {
+        return NextResponse.json({ consultation: mapConsultationRow(rows[0]) }, { status: 200 });
+      }
+    }
+
+    throw error;
+  }
 }

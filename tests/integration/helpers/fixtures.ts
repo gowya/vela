@@ -47,6 +47,23 @@ export async function createPatient(
 
 const DEFAULT_CONTENT = { type: "doc", content: [{ type: "paragraph", content: [] }] };
 
+export async function createAppointment(
+  patientId: string,
+  overrides: { scheduledAt?: Date; cancelledAt?: Date | null } = {}
+) {
+  const { rows } = await pool.query(
+    `INSERT INTO appointments (patient_id, scheduled_at, cancelled_at)
+     VALUES ($1, $2, $3)
+     RETURNING id`,
+    [
+      patientId,
+      overrides.scheduledAt ?? new Date(Date.now() + 60 * 60 * 1000),
+      overrides.cancelledAt ?? null,
+    ]
+  );
+  return { id: rows[0].id as string };
+}
+
 export async function createConsultation(
   patientId: string,
   overrides: { content?: object; contentText?: string } = {}

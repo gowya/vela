@@ -128,6 +128,16 @@ export async function POST(request: Request) {
 
     const patient = rows[0];
 
+    // Même règle de synchronisation qu'au PATCH (voir src/app/api/patients/[id]/route.ts) :
+    // un prochain rendez-vous fixé à la création du patient doit exister comme une vraie
+    // ligne `appointments`, sinon il n'apparaîtrait jamais sur le Dashboard.
+    if (nextAppointmentAt) {
+      await client.query(
+        `INSERT INTO appointments (patient_id, scheduled_at) VALUES ($1, $2)`,
+        [patient.id, nextAppointmentAt]
+      );
+    }
+
     for (const field of customFields) {
       await client.query(
         `INSERT INTO patient_custom_field_values (patient_id, field_definition_id, value)

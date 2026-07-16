@@ -47,6 +47,33 @@ describe("patientCreateSchema", () => {
 
     expect(result.success).toBe(true);
   });
+
+  it("rejette un prochain rendez-vous dans le passé", () => {
+    const result = patientCreateSchema.safeParse({
+      ...base,
+      nextAppointmentAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepte un prochain rendez-vous dans le futur", () => {
+    const result = patientCreateSchema.safeParse({
+      ...base,
+      nextAppointmentAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepte un dernier rendez-vous dans le passé (lastAppointmentAt n'est pas contraint)", () => {
+    const result = patientCreateSchema.safeParse({
+      ...base,
+      lastAppointmentAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    });
+
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("customFieldDefinitionCreateSchema", () => {

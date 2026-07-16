@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Patient } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
+import { PatientPicker } from "@/app/(dashboard)/patients/PatientPicker";
 
 interface NewConsultationDialogProps {
   // Si fourni (ouverture depuis la fiche patient), on saute directement à la page
@@ -56,7 +55,6 @@ function NewConsultationPatientPicker({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [patients, setPatients] = useState<Patient[] | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +62,6 @@ function NewConsultationPatientPicker({
     if (!open) return;
     setError(null);
     setSelectedPatientId("");
-    fetch("/api/patients")
-      .then((response) => response.json())
-      .then((data) => setPatients(data.patients ?? []));
   }, [open]);
 
   function handleStart() {
@@ -86,20 +81,7 @@ function NewConsultationPatientPicker({
           <DialogTitle>Nouvelle consultation</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-2">
-          <Combobox
-            label="Patient"
-            options={(patients ?? []).map((patient) => ({
-              value: patient.id,
-              label: `${patient.firstName} ${patient.lastName}`,
-            }))}
-            value={selectedPatientId || null}
-            onValueChange={(value) => setSelectedPatientId(value ?? "")}
-            placeholder="Choisir un patient"
-          />
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
+        <PatientPicker value={selectedPatientId} onValueChange={setSelectedPatientId} error={error} />
 
         <DialogFooter>
           <Button type="button" onClick={handleStart}>

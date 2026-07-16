@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowsClockwiseIcon,
   CaretLeftIcon,
@@ -23,6 +22,7 @@ import {
 import { Combobox } from "@/components/ui/combobox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { PatientDetailDrawer } from "@/app/(dashboard)/patients/PatientDetailDrawer";
 import {
   EMPTY_CONSULTATION_CONTENT,
   TiptapEditor,
@@ -36,6 +36,9 @@ interface ConsultationEditorProps {
   consultationId: string | null;
   patientId: string;
   templateId: string | null;
+  // Rendez-vous d'origine, le cas échéant (jamais modifiable après création,
+  // même règle que patientId/templateId) — voir migration 010_appointments.
+  appointmentId: string | null;
 }
 
 const AUTOSAVE_DELAY_MS = 800;
@@ -44,6 +47,7 @@ export function ConsultationEditor({
   consultationId,
   patientId,
   templateId,
+  appointmentId,
 }: ConsultationEditorProps) {
   const router = useRouter();
 
@@ -64,6 +68,10 @@ export function ConsultationEditor({
   const [saveAsTemplateError, setSaveAsTemplateError] = useState<string | null>(null);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  // Panneau patient "à portée de main" pendant la consultation (retour test
+  // user #01, C4) : contrairement au drawer classique, pas un overlay — les
+  // deux doivent rester utilisables en même temps.
+  const [showPatientPanel, setShowPatientPanel] = useState(false);
 
   const currentIdRef = useRef<string | null>(consultationId);
   const updatedAtRef = useRef<string | null>(null);
@@ -180,6 +188,7 @@ export function ConsultationEditor({
             body: JSON.stringify({
               patientId,
               templateId: selectedTemplateId,
+              appointmentId,
               title: title || null,
               content,
             }),
@@ -237,7 +246,7 @@ export function ConsultationEditor({
         }
       }
     },
-    [content, patientId, router, title, selectedTemplateId]
+    [content, patientId, appointmentId, router, title, selectedTemplateId]
   );
 
   // Autosave débouncé à chaque changement de contenu.
@@ -275,6 +284,19 @@ export function ConsultationEditor({
       window.removeEventListener("pagehide", flush);
     };
   }, [save]);
+
+  function handleBack() {
+    // Lien "retour" dynamique plutôt que codé en dur vers /consultations : on
+    // arrive ici depuis le Dashboard (rdv du jour/semaine), la liste des
+    // consultations, ou le drawer patient — router.back() renvoie dans tous
+    // les cas là d'où on vient (retour test user #01, N1). Le fallback ne
+    // joue que pour un accès direct par URL, sans historique applicatif.
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/consultations");
+    }
+  }
 
   function handleDelete() {
     if (!currentIdRef.current) {
@@ -359,9 +381,13 @@ export function ConsultationEditor({
       className: "bg-muted text-muted-foreground",
     },
     saved: {
+      // Même traitement neutre que "saving" : ce badge change à chaque frappe
+      // (autosave 800ms), un accent de couleur à ce rythme-là attire trop
+      // l'œil et stresse (retour test user #01, C1). La couleur reste réservée
+      // aux états qui demandent vraiment une action (conflict/error).
       label: "Enregistré",
       icon: CheckCircleIcon,
-      className: "bg-primary/10 text-primary",
+      className: "bg-muted text-muted-foreground",
     },
     conflict: {
       label: "Modifiée ailleurs — rechargez la page avant de continuer",
@@ -377,15 +403,17 @@ export function ConsultationEditor({
   const statusInfo = statusConfig[status];
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-4 px-16 py-8">
+    <div className="flex min-h-screen min-w-0">
+    <main className="flex min-w-0 flex-1 flex-col gap-4 px-16 py-8">
       <div className="flex items-center justify-between">
-        <Link
-          href="/consultations"
+        <button
+          type="button"
+          onClick={handleBack}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <CaretLeftIcon size={14} />
-          Consultations
-        </Link>
+          Retour
+        </button>
         <div className="flex items-center gap-3">
           {statusInfo && (
             <span
@@ -409,9 +437,13 @@ export function ConsultationEditor({
 
       {patient && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>
+          <button
+            type="button"
+            onClick={() => setShowPatientPanel((previous) => !previous)}
+            className="hover:text-foreground hover:underline"
+          >
             {patient.firstName} {patient.lastName}
-          </span>
+          </button>
         </div>
       )}
 
@@ -511,5 +543,18 @@ export function ConsultationEditor({
         </DialogContent>
       </Dialog>
     </main>
+
+    {showPatientPanel && (
+      <aside className="sticky top-0 h-screen w-96 shrink-0 overflow-hidden">
+        <PatientDetailDrawer
+          variant="inline"
+          patientId={patientId}
+          onClose={() => setShowPatientPanel(false)}
+          onUpdated={() => {}}
+          onDeleted={() => router.push("/consultations")}
+        />
+      </aside>
+    )}
+    </div>
   );
 }
