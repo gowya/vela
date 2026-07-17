@@ -6,6 +6,7 @@ import {
   ArrowsClockwiseIcon,
   CaretLeftIcon,
   CheckCircleIcon,
+  TrashIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import type { Consultation, ConsultationContent, ConsultationTemplate, Patient } from "@/types";
@@ -20,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Combobox } from "@/components/ui/combobox";
+import { DateTimePicker } from "@/components/ui/date-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PatientDetailDrawer } from "@/app/(dashboard)/patients/PatientDetailDrawer";
@@ -30,6 +32,14 @@ import {
 } from "./editor/TiptapEditor";
 
 type SaveStatus = "idle" | "saving" | "saved" | "conflict" | "error";
+
+function toDateTimeLocalValue(value: Date | string): string {
+  const date = new Date(value);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
+}
 
 interface ConsultationEditorProps {
   // null = brouillon pas encore créé en base (première sauvegarde = création).
@@ -54,6 +64,12 @@ export function ConsultationEditor({
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [title, setTitle] = useState("");
+  // Brouillon jamais sauvegardé : la date par défaut est "maintenant", comme le
+  // ferait le serveur (DEFAULT now()) — juste rendue visible immédiatement dans
+  // le sélecteur plutôt que de laisser le champ vide.
+  const [date, setDate] = useState(() =>
+    consultationId === null ? toDateTimeLocalValue(new Date()) : ""
+  );
   const [content, setContent] = useState<ConsultationContent>(EMPTY_CONSULTATION_CONTENT);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(templateId);
   const [availableTemplates, setAvailableTemplates] = useState<ConsultationTemplate[] | null>(
@@ -111,6 +127,7 @@ export function ConsultationEditor({
               const consultation: Consultation = data.consultation;
               updatedAtRef.current = new Date(consultation.updatedAt).toISOString();
               setTitle(consultation.title ?? "");
+              setDate(toDateTimeLocalValue(consultation.date));
               setContent(consultation.content);
               if (consultation.templateId) {
                 setSelectedTemplateId(consultation.templateId);
@@ -190,6 +207,7 @@ export function ConsultationEditor({
               templateId: selectedTemplateId,
               appointmentId,
               title: title || null,
+              date: date ? new Date(date).toISOString() : null,
               content,
             }),
             keepalive: options.keepalive,
@@ -214,6 +232,7 @@ export function ConsultationEditor({
           body: JSON.stringify({
             updatedAt: updatedAtRef.current,
             title: title || null,
+            date: date ? new Date(date).toISOString() : null,
             content,
           }),
           keepalive: options.keepalive,
@@ -246,7 +265,7 @@ export function ConsultationEditor({
         }
       }
     },
-    [content, patientId, appointmentId, router, title, selectedTemplateId]
+    [content, patientId, appointmentId, router, title, date, selectedTemplateId]
   );
 
   // Autosave débouncé à chaque changement de contenu.
@@ -262,7 +281,7 @@ export function ConsultationEditor({
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, content]);
+  }, [title, date, content]);
 
   // Flush immédiat si l'onglet est masqué/fermé pendant que l'autosave est en attente
   // (fermeture d'ordinateur en fin de séance = le cas qui ne doit jamais perdre de note).
@@ -404,7 +423,7 @@ export function ConsultationEditor({
 
   return (
     <div className="flex min-h-screen min-w-0">
-    <main className="flex min-w-0 flex-1 flex-col gap-4 px-16 py-8">
+    <main className="flex min-w-0 flex-1 flex-col gap-6 px-16 py-8">
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -429,42 +448,51 @@ export function ConsultationEditor({
               {statusInfo.label}
             </span>
           )}
-          <Button type="button" variant="ghost" size="sm" onClick={handleDelete}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className={cn(
+              "gap-1",
+              !isBlankDraft &&
+                "text-destructive hover:bg-destructive/10 hover:text-destructive"
+            )}
+          >
+            {!isBlankDraft && <TrashIcon size={14} />}
             {isBlankDraft ? "Annuler" : "Supprimer"}
           </Button>
         </div>
       </div>
 
-      {patient && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <button
-            type="button"
-            onClick={() => setShowPatientPanel((previous) => !previous)}
-            className="hover:text-foreground hover:underline"
-          >
-            {patient.firstName} {patient.lastName}
-          </button>
-        </div>
-      )}
-
-      <Input
-        placeholder="Titre de la consultation (optionnel)"
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        className="border-none bg-transparent text-lg font-medium shadow-none focus-visible:ring-0"
-      />
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Titre de la consultation (optionnel)"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          variant="ghost"
+          className="flex-1 text-xl font-semibold"
+        />
+        <DateTimePicker
+          label="Date de la consultation"
+          hideLabel
+          value={date}
+          onValueChange={setDate}
+          className="w-auto shrink-0"
+        />
+      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {isLoading ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <Skeleton className="h-6 w-64" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-2/3" />
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-6">
           <div className="flex items-center gap-2">
             {isBlankDraft && availableTemplates && availableTemplates.length > 0 && (
               <Combobox
@@ -489,6 +517,21 @@ export function ConsultationEditor({
               Enregistrer comme modèle
             </Button>
           </div>
+
+          {patient && (
+            <div className="text-sm text-foreground">
+              Patient :{" "}
+              <button
+                type="button"
+                onClick={() => setShowPatientPanel((previous) => !previous)}
+                className="underline hover:no-underline"
+              >
+                {patient.firstName} {patient.lastName}
+              </button>
+            </div>
+          )}
+
+          <div className="border-t border-border" />
 
           <TiptapEditor
             ref={editorRef}

@@ -101,6 +101,9 @@
   }
 
   html {
+    /* Échelle UI globale (retour test user #01, U1) : en rem, ça remonte
+       proportionnellement toute la typographie et l'espacement Tailwind. */
+    font-size: 110%;
     @apply font-sans;
   }
 
