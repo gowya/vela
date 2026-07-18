@@ -86,7 +86,7 @@ describe("POST /api/appointments", () => {
 
     asPractitioner(intruder.id);
     const response = await POST(
-      postRequest({ patientId: patient.id, scheduledAt: future(1) })
+      postRequest({ patientId: patient.id, scheduledAt: future(1), durationMinutes: 50 })
     );
 
     expect(response.status).toBe(404);
@@ -99,7 +99,7 @@ describe("POST /api/appointments", () => {
 
     asPractitioner(practitioner.id);
     const response = await POST(
-      postRequest({ patientId: patient.id, scheduledAt })
+      postRequest({ patientId: patient.id, scheduledAt, durationMinutes: 50 })
     );
     const body = await response.json();
 
@@ -121,7 +121,10 @@ describe("PATCH /api/appointments/[id]", () => {
     const newDate = future(5);
 
     asPractitioner(practitioner.id);
-    const response = await PATCH(patchRequest({ scheduledAt: newDate }), params(appointment.id));
+    const response = await PATCH(
+      patchRequest({ scheduledAt: newDate, durationMinutes: 50 }),
+      params(appointment.id)
+    );
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -145,7 +148,10 @@ describe("PATCH /api/appointments/[id]", () => {
     const appointment = await createAppointment(patient.id, { cancelledAt: new Date() });
 
     asPractitioner(practitioner.id);
-    const response = await PATCH(patchRequest({ scheduledAt: future(1) }), params(appointment.id));
+    const response = await PATCH(
+      patchRequest({ scheduledAt: future(1), durationMinutes: 50 }),
+      params(appointment.id)
+    );
 
     expect(response.status).toBe(404);
   });
