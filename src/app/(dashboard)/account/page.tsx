@@ -10,10 +10,19 @@ import { InlineTextFieldEditor } from "@/components/InlineTextFieldEditor";
 import { InlineSelectFieldEditor } from "@/components/InlineSelectFieldEditor";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { OpeningHoursEditor } from "@/components/OpeningHoursEditor";
+import { AppointmentTypesManager } from "@/components/AppointmentTypesManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SPECIALTIES } from "@/lib/specialties";
 
-const ACCOUNT_TABS = ["profil", "billing", "notifications", "feedback", "legal"] as const;
+const ACCOUNT_TABS = [
+  "profil",
+  "agenda",
+  "billing",
+  "notifications",
+  "feedback",
+  "legal",
+] as const;
 
 export default async function AccountPage({
   searchParams,
@@ -53,6 +62,7 @@ export default async function AccountPage({
       <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="profil">Profil</TabsTrigger>
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="billing">Facturation</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="feedback">Retours</TabsTrigger>
@@ -136,6 +146,32 @@ export default async function AccountPage({
                 patientsCount={patientsCount}
                 consultationsCount={consultationsCount}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="agenda" className="mt-4 flex flex-col gap-6">
+          <Card className="max-w-lg">
+            <CardHeader>
+              <CardTitle>Horaires d&apos;ouverture</CardTitle>
+              <CardDescription>
+                Utilisés pour calibrer la plage horaire affichée dans la vue Agenda.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OpeningHoursEditor />
+            </CardContent>
+          </Card>
+
+          <Card className="max-w-lg">
+            <CardHeader>
+              <CardTitle>Types de rendez-vous</CardTitle>
+              <CardDescription>
+                Un catalogue réutilisable (nom + durée) pour accélérer la prise de rendez-vous.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AppointmentTypesManager />
             </CardContent>
           </Card>
         </TabsContent>

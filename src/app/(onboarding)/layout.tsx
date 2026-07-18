@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import pool from "@/lib/db";
+import { requirePractitionerRow } from "@/lib/requirePractitionerRow";
 
 export default async function OnboardingLayout({
   children,
@@ -14,12 +14,12 @@ export default async function OnboardingLayout({
     redirect("/login");
   }
 
-  const { rows } = await pool.query(
-    "SELECT onboarding_completed_at FROM practitioners WHERE id = $1",
-    [session.user.id]
+  const profile = await requirePractitionerRow<{ onboarding_completed_at: Date | null }>(
+    session,
+    "SELECT onboarding_completed_at FROM practitioners WHERE id = $1"
   );
 
-  if (rows[0]?.onboarding_completed_at) {
+  if (profile.onboarding_completed_at) {
     redirect("/");
   }
 

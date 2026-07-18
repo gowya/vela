@@ -28,6 +28,18 @@ function patchRequest(body: unknown) {
 const future = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 const past = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
+// "Prochain rdv" est calculé en direct depuis `appointments` (voir migration 012),
+// pas lu depuis une colonne mise en cache sur `patients`.
+async function nextAppointmentAt(patientId: string): Promise<Date | null> {
+  const { rows } = await pool.query(
+    `SELECT MIN(scheduled_at) AS next_appointment_at FROM appointments
+     WHERE patient_id = $1 AND cancelled_at IS NULL AND scheduled_at > now()`,
+    [patientId]
+  );
+  const value = rows[0]?.next_appointment_at;
+  return value ? new Date(value) : null;
+}
+
 describe("GET /api/appointments", () => {
   it("refuse une requête non authentifiée", async () => {
     asGuest();
@@ -80,7 +92,7 @@ describe("POST /api/appointments", () => {
     expect(response.status).toBe(404);
   });
 
-  it("crée le rendez-vous et met à jour next_appointment_at du patient", async () => {
+  it("crée le rendez-vous et le fait apparaître comme prochain rdv du patient", async () => {
     const practitioner = await createPractitioner();
     const patient = await createPatient(practitioner.id);
     const scheduledAt = future(2);
@@ -94,10 +106,8 @@ describe("POST /api/appointments", () => {
     expect(response.status).toBe(201);
     expect(body.appointment.patientId).toBe(patient.id);
 
-    const { rows } = await pool.query("SELECT next_appointment_at FROM patients WHERE id = $1", [
-      patient.id,
-    ]);
-    expect(new Date(rows[0].next_appointment_at).toISOString()).toBe(scheduledAt);
+    const next = await nextAppointmentAt(patient.id);
+    expect(next?.toISOString()).toBe(scheduledAt);
   });
 });
 
@@ -170,9 +180,9 @@ describe("DELETE /api/appointments/[id]", () => {
     expect(response.status).toBe(404);
   });
 
-  // Régression pour syncPatientNextAppointment : annuler le rdv le plus proche ne
-  // doit pas mettre next_appointment_at à null s'il en reste un autre actif.
-  it("fait remonter next_appointment_at sur le rdv actif suivant après annulation du plus proche", async () => {
+  // Annuler le rdv le plus proche ne doit pas faire disparaître "prochain rdv"
+  // s'il en reste un autre actif : le calcul en direct doit retomber sur le suivant.
+  it("fait remonter le prochain rdv sur le rdv actif suivant après annulation du plus proche", async () => {
     const practitioner = await createPractitioner();
     const patient = await createPatient(practitioner.id);
     const soon = new Date(future(1));
@@ -184,9 +194,7 @@ describe("DELETE /api/appointments/[id]", () => {
     const response = await DELETE(new Request("http://localhost"), params(soonAppointment.id));
     expect(response.status).toBe(200);
 
-    const { rows } = await pool.query("SELECT next_appointment_at FROM patients WHERE id = $1", [
-      patient.id,
-    ]);
-    expect(new Date(rows[0].next_appointment_at).toISOString()).toBe(later.toISOString());
+    const next = await nextAppointmentAt(patient.id);
+    expect(next?.toISOString()).toBe(later.toISOString());
   });
 });

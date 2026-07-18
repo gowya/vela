@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { LAST_APPOINTMENT_AT_SQL, NEXT_APPOINTMENT_AT_SQL } from "@/lib/appointments";
 import { mapPatientRow } from "@/lib/mappers";
 import { patientCreateSchema } from "@/lib/validation";
 
@@ -12,12 +13,14 @@ export async function GET() {
   }
 
   const { rows } = await pool.query(
-    `SELECT id, practitioner_id, first_name, last_name, email, phone, birth_date,
-            intake_notes, gender_identity, identified_issue, address, status,
-            last_appointment_at, next_appointment_at, created_at
-     FROM patients
-     WHERE practitioner_id = $1
-     ORDER BY last_name, first_name`,
+    `SELECT p.id, p.practitioner_id, p.first_name, p.last_name, p.email, p.phone, p.birth_date,
+            p.intake_notes, p.gender_identity, p.identified_issue, p.address, p.status,
+            ${LAST_APPOINTMENT_AT_SQL} AS last_appointment_at,
+            ${NEXT_APPOINTMENT_AT_SQL} AS next_appointment_at,
+            p.created_at
+     FROM patients p
+     WHERE p.practitioner_id = $1
+     ORDER BY p.last_name, p.first_name`,
     [session.user.id]
   );
 
@@ -75,7 +78,6 @@ export async function POST(request: Request) {
     identifiedIssue,
     address,
     status,
-    lastAppointmentAt,
     nextAppointmentAt,
     customFields,
   } = parsed.data;
@@ -102,13 +104,11 @@ export async function POST(request: Request) {
     const { rows } = await client.query(
       `INSERT INTO patients (
          practitioner_id, first_name, last_name, email, phone, birth_date,
-         intake_notes, gender_identity, identified_issue, address, status,
-         last_appointment_at, next_appointment_at
+         intake_notes, gender_identity, identified_issue, address, status
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id, practitioner_id, first_name, last_name, email, phone, birth_date,
-                 intake_notes, gender_identity, identified_issue, address, status,
-                 last_appointment_at, next_appointment_at, created_at`,
+                 intake_notes, gender_identity, identified_issue, address, status, created_at`,
       [
         session.user.id,
         firstName,
@@ -121,12 +121,17 @@ export async function POST(request: Request) {
         identifiedIssue ?? null,
         address ?? null,
         status ?? null,
-        lastAppointmentAt ?? null,
-        nextAppointmentAt ?? null,
       ]
     );
 
-    const patient = rows[0];
+    // Un patient tout juste créé n'a par définition aucun rendez-vous passé ;
+    // "prochain rdv" correspond exactement à nextAppointmentAt s'il est fourni
+    // (sur le point d'être inséré comme vrai rendez-vous juste en dessous).
+    const patient = {
+      ...rows[0],
+      last_appointment_at: null,
+      next_appointment_at: nextAppointmentAt ?? null,
+    };
 
     // Même règle de synchronisation qu'au PATCH (voir src/app/api/patients/[id]/route.ts) :
     // un prochain rendez-vous fixé à la création du patient doit exister comme une vraie

@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
 import { ScheduleAppointmentDialog } from "./ScheduleAppointmentDialog";
+import { AppointmentsCalendar } from "./AppointmentsCalendar";
 
 function formatDate(value: Date | string): string {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -66,6 +68,7 @@ export function AppointmentsList() {
     null
   );
   const [isCancelling, setIsCancelling] = useState(false);
+  const [view, setView] = useState<"liste" | "agenda">("liste");
 
   useEffect(() => {
     fetch("/api/appointments")
@@ -146,67 +149,87 @@ export function AppointmentsList() {
       )}
 
       {appointments && !isEmpty && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Heure</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {appointments.map((appointment) => {
-              const status = getStatus(appointment, now);
-              const isCancelled = Boolean(appointment.cancelledAt);
-              return (
-                <TableRow key={appointment.id} className={isCancelled ? "opacity-60" : undefined}>
-                  <TableCell>
-                    <button
-                      type="button"
-                      onClick={() => setOpenPatientId(appointment.patientId)}
-                      className="hover:text-foreground hover:underline"
-                    >
-                      {appointment.patientFirstName} {appointment.patientLastName}
-                    </button>
-                  </TableCell>
-                  <TableCell>{formatDate(appointment.scheduledAt)}</TableCell>
-                  <TableCell>{formatTime(appointment.scheduledAt)}</TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        status.className
-                      )}
-                    >
-                      {status.label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {!isCancelled && (
-                      <div className="flex justify-end gap-2">
-                        <ScheduleAppointmentDialog
-                          appointment={appointment}
-                          onSaved={upsertLocal}
-                          triggerVariant="ghost"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setAppointmentToCancel(appointment)}
-                        >
-                          Annuler
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
+        <Tabs value={view} onValueChange={(value) => setView(value as "liste" | "agenda")}>
+          <TabsList>
+            <TabsTrigger value="liste">Liste</TabsTrigger>
+            <TabsTrigger value="agenda">Agenda</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="liste">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Heure</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {appointments.map((appointment) => {
+                  const status = getStatus(appointment, now);
+                  const isCancelled = Boolean(appointment.cancelledAt);
+                  return (
+                    <TableRow
+                      key={appointment.id}
+                      className={isCancelled ? "opacity-60" : undefined}
+                    >
+                      <TableCell>
+                        <button
+                          type="button"
+                          onClick={() => setOpenPatientId(appointment.patientId)}
+                          className="hover:text-foreground hover:underline"
+                        >
+                          {appointment.patientFirstName} {appointment.patientLastName}
+                        </button>
+                      </TableCell>
+                      <TableCell>{formatDate(appointment.scheduledAt)}</TableCell>
+                      <TableCell>{formatTime(appointment.scheduledAt)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {appointment.appointmentTypeName ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                            status.className
+                          )}
+                        >
+                          {status.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {!isCancelled && (
+                          <div className="flex justify-end gap-2">
+                            <ScheduleAppointmentDialog
+                              appointment={appointment}
+                              onSaved={upsertLocal}
+                              triggerVariant="ghost"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAppointmentToCancel(appointment)}
+                            >
+                              Annuler
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TabsContent>
+
+          <TabsContent value="agenda">
+            <AppointmentsCalendar appointments={appointments} onSelectPatient={setOpenPatientId} />
+          </TabsContent>
+        </Tabs>
       )}
 
       <PatientDetailDrawer

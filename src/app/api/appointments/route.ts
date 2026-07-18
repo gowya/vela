@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
-import { syncPatientNextAppointment } from "@/lib/appointments";
+import { resolveAppointmentDuration } from "@/lib/appointments";
 import { mapAppointmentListItemRow } from "@/lib/mappers";
 import { appointmentCreateSchema } from "@/lib/validation";
 
@@ -14,9 +14,11 @@ export async function GET() {
 
   const { rows } = await pool.query(
     `SELECT a.id, a.patient_id, p.first_name AS patient_first_name, p.last_name AS patient_last_name,
-            a.scheduled_at, a.cancelled_at
+            a.scheduled_at, a.duration_minutes, a.appointment_type_id, t.name AS appointment_type_name,
+            a.cancelled_at
      FROM appointments a
      JOIN patients p ON p.id = a.patient_id
+     LEFT JOIN appointment_types t ON t.id = a.appointment_type_id
      WHERE p.practitioner_id = $1
      ORDER BY a.scheduled_at ASC`,
     [session.user.id]
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 422 });
   }
 
-  const { patientId, scheduledAt } = parsed.data;
+  const { patientId, scheduledAt, appointmentTypeId, durationMinutes } = parsed.data;
 
   const { rows: patientRows } = await pool.query(
     "SELECT first_name, last_name FROM patients WHERE id = $1 AND practitioner_id = $2",
@@ -52,14 +54,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Patient introuvable." }, { status: 404 });
   }
 
+  const resolvedDuration = await resolveAppointmentDuration(
+    pool,
+    session.user.id,
+    appointmentTypeId,
+    durationMinutes
+  );
+  if (!resolvedDuration) {
+    return NextResponse.json({ error: "Type de rendez-vous introuvable." }, { status: 404 });
+  }
+
   const { rows } = await pool.query(
-    `INSERT INTO appointments (patient_id, scheduled_at)
-     VALUES ($1, $2)
-     RETURNING id, patient_id, scheduled_at, cancelled_at`,
-    [patientId, scheduledAt]
+    `INSERT INTO appointments (patient_id, scheduled_at, duration_minutes, appointment_type_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, patient_id, scheduled_at, duration_minutes, appointment_type_id, cancelled_at`,
+    [patientId, scheduledAt, resolvedDuration.durationMinutes, resolvedDuration.appointmentTypeId]
   );
 
-  await syncPatientNextAppointment(pool, patientId);
+  const { rows: typeRows } = resolvedDuration.appointmentTypeId
+    ? await pool.query("SELECT name FROM appointment_types WHERE id = $1", [
+        resolvedDuration.appointmentTypeId,
+      ])
+    : { rows: [] };
 
   return NextResponse.json(
     {
@@ -69,6 +85,9 @@ export async function POST(request: Request) {
         patient_first_name: patientRows[0].first_name,
         patient_last_name: patientRows[0].last_name,
         scheduled_at: rows[0].scheduled_at,
+        duration_minutes: rows[0].duration_minutes,
+        appointment_type_id: rows[0].appointment_type_id,
+        appointment_type_name: typeRows[0]?.name ?? null,
         cancelled_at: rows[0].cancelled_at,
       }),
     },

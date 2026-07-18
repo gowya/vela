@@ -1,6 +1,7 @@
 import type {
   Appointment,
   AppointmentListItem,
+  AppointmentType,
   Consultation,
   ConsultationAttachment,
   ConsultationListItem,
@@ -121,6 +122,8 @@ export function mapAppointmentRow(row: {
   id: string;
   patient_id: string;
   scheduled_at: Date;
+  duration_minutes: number;
+  appointment_type_id: string | null;
   cancelled_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -129,6 +132,8 @@ export function mapAppointmentRow(row: {
     id: row.id,
     patientId: row.patient_id,
     scheduledAt: row.scheduled_at,
+    durationMinutes: row.duration_minutes,
+    appointmentTypeId: row.appointment_type_id,
     cancelledAt: row.cancelled_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -141,6 +146,9 @@ export function mapAppointmentListItemRow(row: {
   patient_first_name: string;
   patient_last_name: string;
   scheduled_at: Date;
+  duration_minutes: number;
+  appointment_type_id: string | null;
+  appointment_type_name: string | null;
   cancelled_at: Date | null;
 }): AppointmentListItem {
   return {
@@ -149,7 +157,28 @@ export function mapAppointmentListItemRow(row: {
     patientFirstName: row.patient_first_name,
     patientLastName: row.patient_last_name,
     scheduledAt: row.scheduled_at,
+    durationMinutes: row.duration_minutes,
+    appointmentTypeId: row.appointment_type_id,
+    appointmentTypeName: row.appointment_type_name,
     cancelledAt: row.cancelled_at,
+  };
+}
+
+export function mapAppointmentTypeRow(row: {
+  id: string;
+  practitioner_id: string;
+  name: string;
+  duration_minutes: number;
+  display_order: number;
+  created_at: Date;
+}): AppointmentType {
+  return {
+    id: row.id,
+    practitionerId: row.practitioner_id,
+    name: row.name,
+    durationMinutes: row.duration_minutes,
+    displayOrder: row.display_order,
+    createdAt: row.created_at,
   };
 }
 

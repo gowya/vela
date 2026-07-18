@@ -36,6 +36,11 @@ export interface Appointment {
   id: string;
   patientId: string;
   scheduledAt: Date;
+  // Figée au moment de la création (copiée depuis appointmentType si choisi) :
+  // supprimer ou modifier le type plus tard ne doit pas changer les rendez-vous
+  // déjà pris.
+  durationMinutes: number;
+  appointmentTypeId: string | null;
   cancelledAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -49,8 +54,36 @@ export interface AppointmentListItem {
   patientFirstName: string;
   patientLastName: string;
   scheduledAt: Date;
+  durationMinutes: number;
+  appointmentTypeId: string | null;
+  // Nom du type au moment de la requête (jointure) : peut être null si le type
+  // a été supprimé depuis, le rendez-vous garde alors sa durée mais perd le nom.
+  appointmentTypeName: string | null;
   cancelledAt: Date | null;
 }
+
+// Catalogue de types de rendez-vous réutilisables du praticien (façon
+// catalogue de prestations Qonto) : un nom associé à une durée par défaut.
+export interface AppointmentType {
+  id: string;
+  practitionerId: string;
+  name: string;
+  durationMinutes: number;
+  displayOrder: number;
+  createdAt: Date;
+}
+
+export type OpeningHoursDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export interface OpeningHoursDay {
+  enabled: boolean;
+  start: string; // "HH:MM"
+  end: string; // "HH:MM"
+}
+
+// Vide/absent = non configuré : aucune restriction n'est appliquée à la vue
+// calendrier (comportement identique à avant l'ajout de ce réglage).
+export type OpeningHours = Partial<Record<OpeningHoursDayKey, OpeningHoursDay>>;
 
 export type CustomFieldType = "text" | "choice" | "date" | "number";
 

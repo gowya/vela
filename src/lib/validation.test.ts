@@ -66,14 +66,6 @@ describe("patientCreateSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepte un dernier rendez-vous dans le passé (lastAppointmentAt n'est pas contraint)", () => {
-    const result = patientCreateSchema.safeParse({
-      ...base,
-      lastAppointmentAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    });
-
-    expect(result.success).toBe(true);
-  });
 });
 
 describe("customFieldDefinitionCreateSchema", () => {

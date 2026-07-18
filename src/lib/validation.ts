@@ -65,7 +65,8 @@ export const patientCreateSchema = z.object({
   identifiedIssue: optionalTrimmedString,
   address: optionalTrimmedString,
   status: optionalTrimmedString,
-  lastAppointmentAt: optionalDateTime,
+  // lastAppointmentAt n'est pas un champ ici : calculé en direct depuis
+  // `appointments` à la lecture (voir migration 012), jamais saisi.
   nextAppointmentAt: optionalFutureDateTime,
   customFields: z.array(customFieldValueInputSchema).optional().default([]),
 });
@@ -188,11 +189,74 @@ const requiredFutureDateTime = z
     message: "Le rendez-vous ne peut pas être planifié dans le passé.",
   });
 
-export const appointmentCreateSchema = z.object({
-  patientId: z.string().uuid("Patient invalide."),
-  scheduledAt: requiredFutureDateTime,
+// Le type détermine la durée si choisi ; sinon une durée manuelle est requise
+// (repli conservant le comportement existant pour qui n'utilise pas le
+// catalogue de types de rendez-vous).
+const appointmentDurationFields = {
+  appointmentTypeId: z.string().uuid("Type de rendez-vous invalide.").nullable().optional(),
+  durationMinutes: z.coerce
+    .number()
+    .int()
+    .min(5, "Durée minimale : 5 minutes.")
+    .max(480, "Durée maximale : 8 heures.")
+    .optional(),
+};
+
+export const appointmentCreateSchema = z
+  .object({
+    patientId: z.string().uuid("Patient invalide."),
+    scheduledAt: requiredFutureDateTime,
+    ...appointmentDurationFields,
+  })
+  .refine((data) => data.appointmentTypeId || data.durationMinutes, {
+    message: "Choisissez un type de rendez-vous ou indiquez une durée.",
+    path: ["durationMinutes"],
+  });
+
+export const appointmentRescheduleSchema = z
+  .object({
+    scheduledAt: requiredFutureDateTime,
+    ...appointmentDurationFields,
+  })
+  .refine((data) => data.appointmentTypeId || data.durationMinutes, {
+    message: "Choisissez un type de rendez-vous ou indiquez une durée.",
+    path: ["durationMinutes"],
+  });
+
+// --- Types de rendez-vous (catalogue) ---
+
+export const appointmentTypeCreateSchema = z.object({
+  name: z.string().trim().min(1, "Le nom est requis.").max(80),
+  durationMinutes: z.coerce
+    .number()
+    .int()
+    .min(5, "Durée minimale : 5 minutes.")
+    .max(480, "Durée maximale : 8 heures."),
 });
 
-export const appointmentRescheduleSchema = z.object({
-  scheduledAt: requiredFutureDateTime,
+export const appointmentTypeUpdateSchema = appointmentTypeCreateSchema;
+
+// --- Horaires d'ouverture ---
+
+const timeOfDaySchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide.");
+
+const openingHoursDaySchema = z
+  .object({
+    enabled: z.boolean(),
+    start: timeOfDaySchema,
+    end: timeOfDaySchema,
+  })
+  .refine((day) => !day.enabled || day.start < day.end, {
+    message: "L'heure de fin doit être après l'heure de début.",
+    path: ["end"],
+  });
+
+export const openingHoursUpdateSchema = z.object({
+  mon: openingHoursDaySchema,
+  tue: openingHoursDaySchema,
+  wed: openingHoursDaySchema,
+  thu: openingHoursDaySchema,
+  fri: openingHoursDaySchema,
+  sat: openingHoursDaySchema,
+  sun: openingHoursDaySchema,
 });

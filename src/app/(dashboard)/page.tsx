@@ -52,12 +52,19 @@ async function getActivationState(practitionerId: string): Promise<ActivationSta
 
   let latestPatient: ActivationState["latestPatient"] = null;
   if (patientCount > 0) {
+    // "A un prochain rdv" est calculé en direct depuis `appointments` (voir
+    // migration 012), jamais depuis une colonne mise en cache sur `patients`.
     const { rows: latestRows } = await pool.query<{
       id: string;
       first_name: string;
-      next_appointment_at: Date | null;
+      has_next_appointment: boolean;
     }>(
-      `SELECT id, first_name, next_appointment_at FROM patients
+      `SELECT id, first_name,
+              EXISTS(
+                SELECT 1 FROM appointments
+                WHERE patient_id = patients.id AND cancelled_at IS NULL AND scheduled_at > now()
+              ) AS has_next_appointment
+       FROM patients
        WHERE practitioner_id = $1
        ORDER BY created_at DESC
        LIMIT 1`,
@@ -67,7 +74,7 @@ async function getActivationState(practitionerId: string): Promise<ActivationSta
       latestPatient = {
         id: latestRows[0].id,
         firstName: latestRows[0].first_name,
-        hasNextAppointment: latestRows[0].next_appointment_at !== null,
+        hasNextAppointment: latestRows[0].has_next_appointment,
       };
     }
   }
