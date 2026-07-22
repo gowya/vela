@@ -1,6 +1,54 @@
 // L'âge et le rappel d'anniversaire ne sont jamais stockés : ils se calculent
 // à l'affichage à partir de `birth_date`, pour rester toujours exacts au jour près.
 
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+// Recherche client (la liste des patients est déjà entièrement chargée) sur
+// tous les champs texte pertinents, y compris les valeurs de champs
+// personnalisés — insensible à la casse et aux accents.
+export function patientMatchesSearch(
+  patient: {
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+    identifiedIssue: string | null;
+    intakeNotes: string | null;
+    status: string | null;
+    genderIdentity: string | null;
+    address: string | null;
+    customFieldValues?: Record<string, string>;
+  },
+  query: string
+): boolean {
+  const trimmed = query.trim();
+  if (!trimmed) return true;
+
+  const haystack = normalizeSearchText(
+    [
+      patient.firstName,
+      patient.lastName,
+      patient.email,
+      patient.phone,
+      patient.identifiedIssue,
+      patient.intakeNotes,
+      patient.status,
+      patient.genderIdentity,
+      patient.address,
+      ...Object.values(patient.customFieldValues ?? {}),
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  return haystack.includes(normalizeSearchText(trimmed));
+}
+
 export function calculateAge(birthDate: string | null): number | null {
   if (!birthDate) return null;
 

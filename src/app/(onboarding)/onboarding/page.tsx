@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
+import { ComboboxMultiple } from "@/components/ui/combobox";
 import { SPECIALTIES, type SpecialtyValue } from "@/lib/specialties";
 
 export default function OnboardingPage() {
@@ -15,7 +15,7 @@ export default function OnboardingPage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [specialty, setSpecialty] = useState<SpecialtyValue | "">("");
+  const [specialties, setSpecialties] = useState<SpecialtyValue[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -23,8 +23,8 @@ export default function OnboardingPage() {
     event.preventDefault();
     setError(null);
 
-    if (!specialty) {
-      setError("Sélectionnez votre spécialité.");
+    if (specialties.length === 0) {
+      setError("Sélectionnez au moins une spécialité.");
       return;
     }
 
@@ -36,7 +36,7 @@ export default function OnboardingPage() {
       body: JSON.stringify({
         firstName,
         lastName,
-        specialty: specialty || undefined,
+        specialties,
       }),
     });
 
@@ -93,13 +93,13 @@ export default function OnboardingPage() {
           </div>
 
           <div className="w-full">
-            <Combobox
-              id="specialty"
-              label="Spécialité"
+            <ComboboxMultiple
+              id="specialties"
+              label="Spécialités"
               options={SPECIALTIES}
-              value={specialty || null}
-              onValueChange={(value) => setSpecialty((value as SpecialtyValue) ?? "")}
-              placeholder="Sélectionnez votre spécialité"
+              value={specialties}
+              onValueChange={(values) => setSpecialties(values as SpecialtyValue[])}
+              placeholder="Sélectionnez vos spécialités"
             />
           </div>
 

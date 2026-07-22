@@ -1,5 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { calculateAge, isBirthdaySoon } from "./patient-utils";
+import { calculateAge, isBirthdaySoon, patientMatchesSearch } from "./patient-utils";
+
+const BASE_PATIENT = {
+  firstName: "Léa",
+  lastName: "Dupont",
+  email: "lea.dupont@example.com",
+  phone: "0612345678",
+  identifiedIssue: "Anxiété de performance",
+  intakeNotes: "Suivi hebdomadaire, contexte professionnel difficile",
+  status: "En couple",
+  genderIdentity: null,
+  address: null,
+};
 
 // Horloge figée au 15 juin 2024 (midi local, pour éviter tout décalage de jour
 // selon le fuseau horaire de la machine qui exécute les tests).
@@ -59,5 +71,35 @@ describe("isBirthdaySoon", () => {
   it("respecte une fenêtre personnalisée", () => {
     expect(isBirthdaySoon("1990-06-30", 20)).toBe(true);
     expect(isBirthdaySoon("1990-06-30", 10)).toBe(false);
+  });
+});
+
+describe("patientMatchesSearch", () => {
+  it("renvoie true pour une recherche vide", () => {
+    expect(patientMatchesSearch(BASE_PATIENT, "")).toBe(true);
+    expect(patientMatchesSearch(BASE_PATIENT, "   ")).toBe(true);
+  });
+
+  it("trouve par nom, insensible à la casse et aux accents", () => {
+    expect(patientMatchesSearch(BASE_PATIENT, "lea")).toBe(true);
+    expect(patientMatchesSearch(BASE_PATIENT, "LÉA")).toBe(true);
+    expect(patientMatchesSearch(BASE_PATIENT, "dupont")).toBe(true);
+  });
+
+  it("trouve par problématique", () => {
+    expect(patientMatchesSearch(BASE_PATIENT, "anxiete")).toBe(true);
+  });
+
+  it("trouve par mot-clé dans les notes de prise en charge", () => {
+    expect(patientMatchesSearch(BASE_PATIENT, "hebdomadaire")).toBe(true);
+  });
+
+  it("trouve par valeur de champ personnalisé", () => {
+    const patient = { ...BASE_PATIENT, customFieldValues: { field1: "Divorce en cours" } };
+    expect(patientMatchesSearch(patient, "divorce")).toBe(true);
+  });
+
+  it("renvoie false quand rien ne correspond", () => {
+    expect(patientMatchesSearch(BASE_PATIENT, "zzz")).toBe(false);
   });
 });
