@@ -10,6 +10,15 @@ import { SignupForm } from "./SignupForm";
 function VerificationNotice() {
   const searchParams = useSearchParams();
   const verification = searchParams.get("verification");
+  const session = searchParams.get("session");
+
+  if (session === "expired") {
+    return (
+      <p className="w-full text-center text-sm text-destructive">
+        Votre session n&apos;est plus valide. Reconnectez-vous.
+      </p>
+    );
+  }
 
   if (verification !== "expired") return null;
 

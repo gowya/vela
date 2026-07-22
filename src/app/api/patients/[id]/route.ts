@@ -2,17 +2,20 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
-import { syncPatientNextAppointment } from "@/lib/appointments";
+import { LAST_APPOINTMENT_AT_SQL, NEXT_APPOINTMENT_AT_SQL } from "@/lib/appointments";
 import { mapPatientRow } from "@/lib/mappers";
 import { patientUpdateSchema } from "@/lib/validation";
 
-const PATIENT_COLUMNS = `id, practitioner_id, first_name, last_name, email, phone, birth_date,
-  intake_notes, gender_identity, identified_issue, address, status,
-  last_appointment_at, next_appointment_at, created_at`;
+// Suppose que la requête aliase `patients` en `p` (voir LAST/NEXT_APPOINTMENT_AT_SQL).
+const PATIENT_COLUMNS = `p.id, p.practitioner_id, p.first_name, p.last_name, p.email, p.phone, p.birth_date,
+  p.intake_notes, p.gender_identity, p.identified_issue, p.address, p.status,
+  ${LAST_APPOINTMENT_AT_SQL} AS last_appointment_at,
+  ${NEXT_APPOINTMENT_AT_SQL} AS next_appointment_at,
+  p.created_at`;
 
 // Mappe les clés camelCase du payload vers les colonnes SQL correspondantes.
-// nextAppointmentAt n'y figure pas : ce n'est plus un champ écrit directement (voir plus
-// bas), c'est une valeur dérivée de la table `appointments` via syncPatientNextAppointment.
+// nextAppointmentAt n'y figure pas : ce n'est jamais un champ écrit directement, c'est une
+// valeur dérivée de la table `appointments`, calculée à la lecture (voir migration 012).
 const FIELD_TO_COLUMN: Record<string, string> = {
   firstName: "first_name",
   lastName: "last_name",
@@ -24,7 +27,6 @@ const FIELD_TO_COLUMN: Record<string, string> = {
   identifiedIssue: "identified_issue",
   address: "address",
   status: "status",
-  lastAppointmentAt: "last_appointment_at",
 };
 
 async function getOwnedPatientCustomFields(patientId: string) {
@@ -58,7 +60,7 @@ export async function GET(
   const { id } = await params;
 
   const { rows } = await pool.query(
-    `SELECT ${PATIENT_COLUMNS} FROM patients WHERE id = $1 AND practitioner_id = $2`,
+    `SELECT ${PATIENT_COLUMNS} FROM patients p WHERE p.id = $1 AND p.practitioner_id = $2`,
     [id, session.user.id]
   );
 
@@ -130,8 +132,8 @@ export async function PATCH(
     // (voir migration 010) : on garde les deux synchronisés ici plutôt que de dupliquer
     // cette logique partout où nextAppointmentAt peut être modifié. Un seul rendez-vous
     // actif futur par patient est géré depuis ce champ du drawer (l'onglet Rendez-vous
-    // permet d'en planifier plusieurs ; syncPatientNextAppointment recalcule ensuite le
-    // plus proche via MIN(), donc le résultat reste correct même dans ce cas).
+    // permet d'en planifier plusieurs ; "le prochain" est de toute façon recalculé à la
+    // lecture via MIN(), donc le résultat reste correct même dans ce cas).
     if (nextAppointmentAtProvided) {
       const { rows: activeAppointmentRows } = await client.query(
         `SELECT id FROM appointments
@@ -159,8 +161,6 @@ export async function PATCH(
           [activeAppointmentId]
         );
       }
-
-      await syncPatientNextAppointment(client, id);
     }
 
     if (customFields && customFields.length > 0) {
@@ -189,7 +189,7 @@ export async function PATCH(
     }
 
     const { rows } = await client.query(
-      `SELECT ${PATIENT_COLUMNS} FROM patients WHERE id = $1`,
+      `SELECT ${PATIENT_COLUMNS} FROM patients p WHERE p.id = $1`,
       [id]
     );
 

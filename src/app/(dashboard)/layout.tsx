@@ -7,6 +7,7 @@ import { BetaNoticeDialog } from "@/components/BetaNoticeDialog";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import pool from "@/lib/db";
+import { requirePractitionerRow } from "@/lib/requirePractitionerRow";
 
 export default async function DashboardLayout({
   children,
@@ -19,15 +20,19 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const { rows } = await pool.query(
+  const profile = await requirePractitionerRow<{
+    onboarding_completed_at: Date | null;
+    beta_notice_dismissed_at: Date | null;
+    email_verified_at: Date | null;
+    dashboard_visits_count: number;
+  }>(
+    session,
     `SELECT onboarding_completed_at, beta_notice_dismissed_at, email_verified_at,
             dashboard_visits_count + 1 AS dashboard_visits_count
-     FROM practitioners WHERE id = $1`,
-    [session.user.id]
+     FROM practitioners WHERE id = $1`
   );
-  const profile = rows[0];
 
-  if (!profile?.onboarding_completed_at) {
+  if (!profile.onboarding_completed_at) {
     redirect("/onboarding");
   }
 
