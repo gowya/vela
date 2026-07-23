@@ -546,7 +546,7 @@ export function ConsultationEditor({
       <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enregistrer comme template</DialogTitle>
+            <DialogTitle>Enregistrer comme modèle</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Input

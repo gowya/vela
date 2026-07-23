@@ -13,7 +13,7 @@ export type AccountExport = {
 export async function buildAccountExport(practitionerId: string): Promise<AccountExport> {
   const [practitionerResult, patientsResult] = await Promise.all([
     pool.query(
-      `SELECT id, email, first_name, last_name, phone, specialty, created_at
+      `SELECT id, email, first_name, last_name, phone, specialties, created_at
        FROM practitioners WHERE id = $1`,
       [practitionerId]
     ),

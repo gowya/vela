@@ -44,7 +44,7 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import type { CustomFieldDefinition, Patient } from "@/types";
-import { calculateAge, isBirthdaySoon } from "@/lib/patient-utils";
+import { calculateAge, isBirthdaySoon, patientMatchesSearch } from "@/lib/patient-utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -396,6 +396,7 @@ export function PatientsList() {
   );
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [search, setSearch] = useState("");
 
   async function handleDuplicate(patient: Patient) {
     const response = await fetch("/api/patients", {
@@ -670,8 +671,13 @@ export function PatientsList() {
     [customFieldDefinitions]
   );
 
+  const filteredPatients = useMemo(
+    () => (patients ?? []).filter((patient) => patientMatchesSearch(patient, search)),
+    [patients, search]
+  );
+
   const table = useReactTable({
-    data: patients ?? [],
+    data: filteredPatients,
     columns,
     state: { sorting, columnVisibility, columnOrder },
     onSortingChange: setSorting,
@@ -751,6 +757,14 @@ export function PatientsList() {
         </div>
       </div>
 
+      {patients !== null && patients.length > 0 && (
+        <Input
+          placeholder="Rechercher par nom, mot-clé, problématique…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      )}
+
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {patients === null && !error && (
@@ -791,7 +805,13 @@ export function PatientsList() {
         </Empty>
       )}
 
-      {patients !== null && patients.length > 0 && (
+      {patients !== null && patients.length > 0 && filteredPatients.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          Aucun patient ne correspond à cette recherche.
+        </p>
+      )}
+
+      {filteredPatients.length > 0 && (
         <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
           <DndContext
             sensors={sensors}

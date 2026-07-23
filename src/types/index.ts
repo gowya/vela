@@ -4,7 +4,7 @@ export interface Practitioner {
   id: string;
   email: string;
   name: string;
-  specialty: string;
+  specialties: string[];
   createdAt: Date;
 }
 

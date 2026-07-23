@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InlineTextFieldEditor } from "@/components/InlineTextFieldEditor";
-import { InlineSelectFieldEditor } from "@/components/InlineSelectFieldEditor";
+import { InlineMultiSelectFieldEditor } from "@/components/InlineMultiSelectFieldEditor";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { OpeningHoursEditor } from "@/components/OpeningHoursEditor";
@@ -34,7 +34,7 @@ export default async function AccountPage({
   const defaultTab = ACCOUNT_TABS.find((value) => value === tab) ?? "profil";
 
   const { rows } = await pool.query(
-    `SELECT first_name, last_name, phone, specialty, email, email_verified_at
+    `SELECT first_name, last_name, phone, specialties, email, email_verified_at
      FROM practitioners WHERE id = $1`,
     [session?.user?.id]
   );
@@ -112,13 +112,13 @@ export default async function AccountPage({
                 />
               </div>
               <div>
-                <Label className="mb-1">Spécialité</Label>
-                <InlineSelectFieldEditor
-                  field="specialty"
-                  label="La spécialité"
-                  initialValue={profile.specialty ?? ""}
+                <Label className="mb-1">Spécialités</Label>
+                <InlineMultiSelectFieldEditor
+                  field="specialties"
+                  label="Les spécialités"
+                  initialValue={profile.specialties ?? []}
                   options={SPECIALTIES}
-                  placeholder="Non renseignée"
+                  placeholder="Non renseignées"
                 />
               </div>
 

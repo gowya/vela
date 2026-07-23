@@ -9,14 +9,14 @@ const FIELD_COLUMNS: Record<string, string> = {
   firstName: "first_name",
   lastName: "last_name",
   phone: "phone",
-  specialty: "specialty",
+  specialties: "specialties",
 };
 
 const profileSchema = z.discriminatedUnion("field", [
   z.object({ field: z.literal("firstName"), value: z.string().trim().min(2).max(80) }),
   z.object({ field: z.literal("lastName"), value: z.string().trim().min(2).max(80) }),
   z.object({ field: z.literal("phone"), value: z.string().trim().max(30) }),
-  z.object({ field: z.literal("specialty"), value: z.enum(SPECIALTY_VALUES) }),
+  z.object({ field: z.literal("specialties"), value: z.array(z.enum(SPECIALTY_VALUES)) }),
 ]);
 
 export async function PATCH(request: Request) {
