@@ -310,9 +310,17 @@ export function PatientDetailDrawer({
   const autoFocusTriggeredRef = useRef(false);
   // Dernier état connu comme enregistré (chargement initial ou sauvegarde
   // réussie) : sert de référence pour détecter des modifications non
-  // enregistrées avant de fermer le drawer.
-  const pristineFormRef = useRef<EditFormState | null>(null);
-  const pristineCustomFieldValuesRef = useRef<Record<string, string>>({});
+  // enregistrées avant de fermer le drawer. En state (pas une ref) car lu
+  // pendant le rendu pour calculer `isDirty`.
+  const [pristineForm, setPristineForm] = useState<EditFormState | null>(null);
+  const [pristineCustomFieldValues, setPristineCustomFieldValues] = useState<
+    Record<string, string>
+  >({});
+  const [prevPatientId, setPrevPatientId] = useState(patientId);
+  const [prevCustomFieldDefinitions, setPrevCustomFieldDefinitions] = useState(
+    customFieldDefinitions
+  );
+  const [prevCustomFields, setPrevCustomFields] = useState(customFields);
 
   const fieldDragSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -382,15 +390,25 @@ export function PatientDetailDrawer({
     onClose();
   }
 
-  useEffect(() => {
+  // Changement de patient : on repart d'un état vierge avant de recharger,
+  // plutôt que de laisser transitoirement les données du patient précédent
+  // affichées sous un nouvel id. Ajustement pendant le rendu (et non un
+  // effet) puisqu'il ne fait que dériver du changement de la prop `patientId`.
+  if (patientId !== prevPatientId) {
+    setPrevPatientId(patientId);
     setPatient(null);
     setCustomFields([]);
     setConsultations(null);
     setForm(null);
     setIsAddingField(false);
     setError(null);
-    autoFocusTriggeredRef.current = false;
+  }
 
+  useEffect(() => {
+    autoFocusTriggeredRef.current = false;
+  }, [patientId]);
+
+  useEffect(() => {
     if (!patientId) return;
 
     let cancelled = false;
@@ -422,7 +440,7 @@ export function PatientDetailDrawer({
         nextAppointmentAt: toDateTimeLocalValue(loadedPatient.nextAppointmentAt),
       };
       setForm(loadedForm);
-      pristineFormRef.current = loadedForm;
+      setPristineForm(loadedForm);
     }
 
     async function loadConsultations() {
@@ -453,8 +471,14 @@ export function PatientDetailDrawer({
   // Une fois les définitions de champs personnalisés chargées, initialise leurs
   // valeurs pour ce patient (séparé du chargement du patient lui-même : les deux
   // requêtes sont indépendantes et n'arrivent pas forcément dans le même ordre).
-  useEffect(() => {
-    if (customFieldDefinitions.length === 0) return;
+  // Ajustement pendant le rendu : dérive de customFieldDefinitions/customFields,
+  // tout en laissant customFieldValues librement modifiable ensuite par l'édition.
+  if (
+    customFieldDefinitions.length > 0 &&
+    (customFieldDefinitions !== prevCustomFieldDefinitions || customFields !== prevCustomFields)
+  ) {
+    setPrevCustomFieldDefinitions(customFieldDefinitions);
+    setPrevCustomFields(customFields);
     const existingValues = Object.fromEntries(
       customFields.map((field) => [field.fieldDefinitionId, field.value ?? ""])
     );
@@ -465,8 +489,8 @@ export function PatientDetailDrawer({
       ])
     );
     setCustomFieldValues(nextValues);
-    pristineCustomFieldValuesRef.current = nextValues;
-  }, [customFieldDefinitions, customFields]);
+    setPristineCustomFieldValues(nextValues);
+  }
 
   useEffect(() => {
     if (!autoEditField || !form || autoFocusTriggeredRef.current) return;
@@ -591,7 +615,7 @@ export function PatientDetailDrawer({
     const updatedCustomFields: PatientDetailField[] = data.customFields ?? [];
     setPatient(data.patient);
     setCustomFields(updatedCustomFields);
-    pristineFormRef.current = form;
+    setPristineForm(form);
     // La liste des patients affiche les champs personnalisés en colonnes : on
     // lui transmet leurs valeurs à jour, sinon elle resterait sur les valeurs
     // chargées à l'ouverture du drawer jusqu'au prochain rechargement complet.
@@ -615,8 +639,8 @@ export function PatientDetailDrawer({
 
   const isDirty =
     form !== null &&
-    (JSON.stringify(form) !== JSON.stringify(pristineFormRef.current) ||
-      JSON.stringify(customFieldValues) !== JSON.stringify(pristineCustomFieldValuesRef.current));
+    (JSON.stringify(form) !== JSON.stringify(pristineForm) ||
+      JSON.stringify(customFieldValues) !== JSON.stringify(pristineCustomFieldValues));
 
   function requestClose() {
     if (isDirty) {

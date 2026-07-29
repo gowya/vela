@@ -29,6 +29,7 @@ export function InlineTextFieldEditor({
   type,
   inputMode,
 }: InlineTextFieldEditorProps) {
+  const [prevInitialValue, setPrevInitialValue] = useState(initialValue);
   const [value, setValue] = useState(initialValue);
   const [draftValue, setDraftValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
@@ -36,10 +37,11 @@ export function InlineTextFieldEditor({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  if (initialValue !== prevInitialValue) {
+    setPrevInitialValue(initialValue);
     setValue(initialValue);
     setDraftValue(initialValue);
-  }, [initialValue]);
+  }
 
   useEffect(() => {
     if (isEditing) {

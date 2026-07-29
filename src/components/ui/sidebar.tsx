@@ -433,7 +433,10 @@ function SidebarMenuSkeleton({
   showIcon = false,
   ...props
 }: React.ComponentProps<"div"> & { showIcon?: boolean }) {
-  const width = React.useMemo(() => `${Math.floor(Math.random() * 40) + 50}%`, [])
+  // Largeur tirée au hasard une seule fois par squelette : useState(lazy init) est
+  // l'échappatoire documentée de React pour une impureté locale à l'instance,
+  // contrairement à useMemo qui n'offre aucune garantie de n'exécuter qu'une fois.
+  const [width] = React.useState(() => `${Math.floor(Math.random() * 40) + 50}%`)
 
   return (
     <div data-slot="sidebar-menu-skeleton" className={cn("flex h-8 items-center gap-2 rounded-md px-2", className)} {...props}>

@@ -3,6 +3,11 @@ import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Next.js détecte un package-lock.json parasite hors du repo (dans le home
+  // directory) et hésite sur la racine du workspace : on la fixe explicitement.
+  turbopack: {
+    root: import.meta.dirname,
+  },
   experimental: {
     // Les pages du dashboard sont entièrement dynamiques (données patient/consultation
     // par session) : le cache client par défaut (30s) affichait des données obsolètes
