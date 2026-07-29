@@ -728,7 +728,7 @@ export function PatientsList() {
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+            <DropdownMenuTrigger render={<Button variant="outline" />}>
               <ColumnsIcon size={14} />
               Colonnes
             </DropdownMenuTrigger>
@@ -799,6 +799,7 @@ export function PatientsList() {
           </EmptyHeader>
           <EmptyContent>
             <AddPatientDialog
+              triggerSize="lg"
               onCreated={(patient) => setPatients((previous) => [...(previous ?? []), patient])}
             />
           </EmptyContent>

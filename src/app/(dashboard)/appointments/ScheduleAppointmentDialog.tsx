@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { InfoIcon } from "@phosphor-icons/react";
 import type { AppointmentListItem, AppointmentType } from "@/types";
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PatientPicker } from "@/app/(dashboard)/patients/PatientPicker";
 import { formatDuration } from "@/lib/duration";
 
@@ -36,6 +38,10 @@ interface ScheduleAppointmentDialogProps {
   onSaved: (appointment: AppointmentListItem) => void;
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";
+  // Mode contrôlé : l'ouverture est pilotée par le parent (depuis un menu
+  // d'actions, par exemple) et le dialog n'affiche pas son propre déclencheur.
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function toDateTimeLocalValue(value: Date | string): string {
@@ -51,8 +57,20 @@ export function ScheduleAppointmentDialog({
   onSaved,
   triggerLabel,
   triggerVariant = "default",
+  open: controlledOpen,
+  onOpenChange,
 }: ScheduleAppointmentDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  function setOpen(nextOpen: boolean) {
+    if (isControlled) {
+      onOpenChange?.(nextOpen);
+    } else {
+      setUncontrolledOpen(nextOpen);
+    }
+  }
   const [patientId, setPatientId] = useState(appointment?.patientId ?? "");
   const [scheduledAt, setScheduledAt] = useState(
     appointment ? toDateTimeLocalValue(appointment.scheduledAt) : ""
@@ -159,13 +177,15 @@ export function ScheduleAppointmentDialog({
         if (nextOpen) reset();
       }}
     >
-      <DialogTrigger
-        render={
-          <Button type="button" variant={triggerVariant} size={appointment ? "sm" : "default"} />
-        }
-      >
-        {triggerLabel ?? (appointment ? "Modifier" : "Planifier un rendez-vous")}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger
+          render={
+            <Button type="button" variant={triggerVariant} size={appointment ? "sm" : "default"} />
+          }
+        >
+          {triggerLabel ?? (appointment ? "Modifier" : "Planifier un rendez-vous")}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -190,9 +210,23 @@ export function ScheduleAppointmentDialog({
           />
 
           <div>
-            <Label htmlFor="appointment-type" className="mb-1">
-              Type de rendez-vous
-            </Label>
+            <div className="mb-1 flex items-center gap-1">
+              <Label htmlFor="appointment-type">Type de rendez-vous</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    type="button"
+                    className="text-muted-foreground outline-none hover:text-foreground"
+                  >
+                    <InfoIcon size={14} />
+                    <span className="sr-only">À propos des types de rendez-vous</span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-56">
+                    Configurez vos types de rendez-vous dans Compte, onglet Agenda.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select
               value={appointmentTypeId}
               onValueChange={(value) => setAppointmentTypeId(value ?? MANUAL_DURATION_VALUE)}

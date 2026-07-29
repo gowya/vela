@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowsClockwiseIcon,
   CaretLeftIcon,
   CheckCircleIcon,
+  ClockCounterClockwiseIcon,
   TrashIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
@@ -30,6 +32,7 @@ import {
   TiptapEditor,
   type TiptapEditorHandle,
 } from "./editor/TiptapEditor";
+import { ConsultationVersionHistory } from "./ConsultationVersionHistory";
 
 type SaveStatus = "idle" | "saving" | "saved" | "conflict" | "error";
 
@@ -88,6 +91,10 @@ export function ConsultationEditor({
   // user #01, C4) : contrairement au drawer classique, pas un overlay — les
   // deux doivent rester utilisables en même temps.
   const [showPatientPanel, setShowPatientPanel] = useState(false);
+
+  // Historique de versions (retour test user #01, C3).
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyRefreshToken, setHistoryRefreshToken] = useState(0);
 
   const currentIdRef = useRef<string | null>(consultationId);
   const updatedAtRef = useRef<string | null>(null);
@@ -304,6 +311,37 @@ export function ConsultationEditor({
     };
   }, [save]);
 
+  // Raccourci "à la Figma" pour enregistrer un checkpoint manuel dans l'historique
+  // sans ouvrir le panneau (retour test user #01, C3).
+  useEffect(() => {
+    function handleKeydown(event: KeyboardEvent) {
+      const isShortcut =
+        (event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === "s";
+      if (!isShortcut) return;
+      event.preventDefault();
+
+      (async () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        await save();
+        if (!currentIdRef.current) return;
+
+        const response = await fetch(`/api/consultations/${currentIdRef.current}/versions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }).catch(() => null);
+
+        if (response?.ok) {
+          toast.success("Version enregistrée.");
+          setHistoryRefreshToken((token) => token + 1);
+        }
+      })();
+    }
+
+    document.addEventListener("keydown", handleKeydown);
+    return () => document.removeEventListener("keydown", handleKeydown);
+  }, [save]);
+
   function handleBack() {
     // Lien "retour" dynamique plutôt que codé en dur vers /consultations : on
     // arrive ici depuis le Dashboard (rdv du jour/semaine), la liste des
@@ -357,6 +395,27 @@ export function ConsultationEditor({
       throw new Error("La consultation n'a pas pu être créée.");
     }
     return currentIdRef.current;
+  }
+
+  // Un checkpoint (automatique ou manuel) ne peut porter que sur du contenu déjà
+  // en base : on flush l'autosave en attente (et on crée la consultation si elle
+  // n'a jamais été sauvegardée) avant d'ouvrir l'historique, pour ne jamais
+  // afficher un état plus ancien que ce que le praticien vient de taper.
+  async function handleOpenHistory() {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    await save();
+    if (!currentIdRef.current) return;
+    setHistoryOpen(true);
+  }
+
+  function handleVersionRestored(restored: Consultation) {
+    setContent(restored.content);
+    editorRef.current?.setContent(restored.content);
+    updatedAtRef.current = new Date(restored.updatedAt).toISOString();
+    hasConflictRef.current = false;
+    setStatus("saved");
+    setHistoryOpen(false);
+    toast.success("Version restaurée.");
   }
 
   async function handleSaveAsTemplate() {
@@ -447,6 +506,18 @@ export function ConsultationEditor({
               />
               {statusInfo.label}
             </span>
+          )}
+          {!isBlankDraft && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenHistory}
+              className="gap-1"
+            >
+              <ClockCounterClockwiseIcon size={14} />
+              Historique
+            </Button>
           )}
           <Button
             type="button"
@@ -585,6 +656,17 @@ export function ConsultationEditor({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {historyOpen && currentIdRef.current && (
+        <ConsultationVersionHistory
+          consultationId={currentIdRef.current}
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          currentContent={content}
+          refreshToken={historyRefreshToken}
+          onRestored={handleVersionRestored}
+        />
+      )}
     </main>
 
     {showPatientPanel && (

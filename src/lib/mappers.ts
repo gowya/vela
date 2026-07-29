@@ -6,6 +6,8 @@ import type {
   ConsultationAttachment,
   ConsultationListItem,
   ConsultationTemplate,
+  ConsultationVersion,
+  ConsultationVersionDetail,
   CustomFieldDefinition,
   Patient,
 } from "@/types";
@@ -231,5 +233,47 @@ export function mapConsultationListItemRow(row: {
     excerpt,
     date: row.date,
     updatedAt: row.updated_at,
+  };
+}
+
+export function mapConsultationVersionRow(row: {
+  id: string;
+  consultation_id: string;
+  is_manual: boolean;
+  label: string | null;
+  content_text: string;
+  created_at: Date;
+}): ConsultationVersion {
+  const trimmed = row.content_text.trim();
+  const excerpt =
+    trimmed.length > EXCERPT_LENGTH ? `${trimmed.slice(0, EXCERPT_LENGTH)}…` : trimmed;
+
+  return {
+    id: row.id,
+    consultationId: row.consultation_id,
+    isManual: row.is_manual,
+    label: row.label,
+    contentText: excerpt,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapConsultationVersionDetailRow(row: {
+  id: string;
+  consultation_id: string;
+  is_manual: boolean;
+  label: string | null;
+  content: unknown;
+  content_text: string;
+  created_at: Date;
+}): ConsultationVersionDetail {
+  return {
+    id: row.id,
+    consultationId: row.consultation_id,
+    isManual: row.is_manual,
+    label: row.label,
+    content: normalizeConsultationContent(row.content),
+    contentText: row.content_text,
+    createdAt: row.created_at,
   };
 }

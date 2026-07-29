@@ -16,7 +16,6 @@ import {
   SignOutIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
-import { Logo } from "@/components/ui/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +31,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -63,10 +61,7 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader className="flex-row items-center justify-between px-2 pt-1">
-        <div className="flex items-center overflow-hidden group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-          <Logo size={36} />
-        </div>
+      <SidebarHeader className="flex-row items-center justify-center px-2 pt-1">
         <SidebarTrigger className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
       </SidebarHeader>
 
@@ -107,18 +102,18 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
                       onClick={() => toast.info("Les abonnements arrivent bientôt.")}
                     >
                       <SparkleIcon size={14} />
-                      Upgrade to Pro
+                      Passer à l&apos;offre Pro
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
                 <DropdownMenuItem render={<Link href="/account" />}>
                   <UserIcon size={14} />
-                  Account
+                  Compte
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/account?tab=billing" />}>
                   <CreditCardIcon size={14} />
-                  Billing
+                  Facturation
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/account?tab=notifications" />}>
                   <BellIcon size={14} />
@@ -134,15 +129,13 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
                   onClick={() => signOut({ callbackUrl: "/login" })}
                 >
                   <SignOutIcon size={14} />
-                  Log out
+                  Se déconnecter
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   );
 }

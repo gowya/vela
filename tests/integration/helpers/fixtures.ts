@@ -80,3 +80,29 @@ export async function createConsultation(
   );
   return { id: rows[0].id as string, updatedAt: rows[0].updated_at as Date };
 }
+
+export async function createConsultationVersion(
+  consultationId: string,
+  overrides: {
+    content?: object;
+    contentText?: string;
+    isManual?: boolean;
+    label?: string | null;
+    createdAt?: Date;
+  } = {}
+) {
+  const { rows } = await pool.query(
+    `INSERT INTO consultation_versions (consultation_id, content, content_text, is_manual, label, created_at)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6, now()))
+     RETURNING id, created_at`,
+    [
+      consultationId,
+      JSON.stringify(overrides.content ?? DEFAULT_CONTENT),
+      overrides.contentText ?? "",
+      overrides.isManual ?? false,
+      overrides.label ?? null,
+      overrides.createdAt ?? null,
+    ]
+  );
+  return { id: rows[0].id as string, createdAt: rows[0].created_at as Date };
+}
