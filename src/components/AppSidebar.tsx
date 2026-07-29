@@ -107,18 +107,18 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
                       onClick={() => toast.info("Les abonnements arrivent bientôt.")}
                     >
                       <SparkleIcon size={14} />
-                      Upgrade to Pro
+                      Passer à l&apos;offre Pro
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
                 <DropdownMenuItem render={<Link href="/account" />}>
                   <UserIcon size={14} />
-                  Account
+                  Compte
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/account?tab=billing" />}>
                   <CreditCardIcon size={14} />
-                  Billing
+                  Facturation
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/account?tab=notifications" />}>
                   <BellIcon size={14} />
@@ -134,7 +134,7 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
                   onClick={() => signOut({ callbackUrl: "/login" })}
                 >
                   <SignOutIcon size={14} />
-                  Log out
+                  Se déconnecter
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

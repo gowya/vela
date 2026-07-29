@@ -154,6 +154,25 @@ export interface Consultation {
   createdAt: Date;
 }
 
+// Historique de versions (retour test user #01, C3) : checkpoints automatiques
+// throttlés à l'autosave (isManual: false) ou créés explicitement par le
+// praticien (isManual: true, label optionnel). Jamais purgé.
+export interface ConsultationVersion {
+  id: string;
+  consultationId: string;
+  isManual: boolean;
+  label: string | null;
+  contentText: string;
+  createdAt: Date;
+}
+
+// Forme détail (avec le contenu complet), pour l'aperçu en lecture seule d'une
+// version passée — jamais renvoyée dans la liste, même logique que
+// ConsultationListItem vs Consultation.
+export interface ConsultationVersionDetail extends ConsultationVersion {
+  content: ConsultationContent;
+}
+
 // Version allégée retournée par la liste : jamais le contenu complet (données de
 // santé sensibles), seulement un extrait tronqué pour l'aperçu.
 export interface ConsultationListItem {

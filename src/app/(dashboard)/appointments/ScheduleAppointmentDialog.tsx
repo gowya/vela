@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { InfoIcon } from "@phosphor-icons/react";
 import type { AppointmentListItem, AppointmentType } from "@/types";
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PatientPicker } from "@/app/(dashboard)/patients/PatientPicker";
 import { formatDuration } from "@/lib/duration";
 
@@ -190,9 +192,23 @@ export function ScheduleAppointmentDialog({
           />
 
           <div>
-            <Label htmlFor="appointment-type" className="mb-1">
-              Type de rendez-vous
-            </Label>
+            <div className="mb-1 flex items-center gap-1">
+              <Label htmlFor="appointment-type">Type de rendez-vous</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    type="button"
+                    className="text-muted-foreground outline-none hover:text-foreground"
+                  >
+                    <InfoIcon size={14} />
+                    <span className="sr-only">À propos des types de rendez-vous</span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-56">
+                    Configurez vos types de rendez-vous dans Compte, onglet Agenda.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select
               value={appointmentTypeId}
               onValueChange={(value) => setAppointmentTypeId(value ?? MANUAL_DURATION_VALUE)}
