@@ -91,6 +91,31 @@ RGPD (art. 9). Ni Neon ni Vercel ne sont hébergeurs de données de santé
 certifiés. À trancher : positionnement bêta explicite et documenté, ou migration
 vers un hébergeur certifié.
 
+## Idées UI (non bloquant, à faire dans un commit dédié)
+
+### 7. Bouton « + » de l'historique de versions peu visible
+
+Dans `ConsultationVersionHistory.tsx`, le bouton pour créer un checkpoint manuel
+est un `PlusIcon` en `variant="ghost" size="icon-sm"`, seul dans l'en-tête du
+panneau — trop discret pour une action qu'on veut que le praticien découvre et
+utilise (checkpoint avant une réécriture importante). À retravailler pour plus
+de poids visuel (libellé visible, ou `variant="outline"`).
+
+### 8. « Enregistrer comme modèle » : visibilité conditionnelle + repositionnement
+
+Dans `ConsultationEditor.tsx`, le bouton « Enregistrer comme modèle » est
+aujourd'hui toujours affiché sous la ligne titre/date, même sur une
+consultation vide — un modèle vide n'a pas de sens.
+
+- **Masquer le bouton** tant que le praticien n'a rien écrit dans le contenu de
+  la consultation (comparer à `EMPTY_CONSULTATION_CONTENT`).
+- **Le déplacer** entre l'input Titre et le `DateTimePicker` (actuellement sur
+  la ligne du dessous, à côté de « Partir d'un modèle »).
+- **Animation** : apparition en fondu depuis la gauche (fade + slide-in) au
+  moment où il devient pertinent, avec le champ Titre qui rétrécit en fondu au
+  même instant pour lui faire de la place — les deux transitions synchronisées,
+  pas un simple `display: none` qui fait sauter la mise en page.
+
 ## Déjà en place (ne bloque pas)
 
 Pour mémoire, à ne pas re-challenger : soft-delete généralisé, verrou optimiste
