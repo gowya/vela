@@ -42,7 +42,7 @@ export function AddPatientDialog({
   onCreated,
   triggerVariant = "default",
   triggerLabel = "Ajouter un patient",
-  triggerSize = "lg",
+  triggerSize = "default",
 }: AddPatientDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);

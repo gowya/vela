@@ -38,6 +38,10 @@ interface ScheduleAppointmentDialogProps {
   onSaved: (appointment: AppointmentListItem) => void;
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";
+  // Mode contrôlé : l'ouverture est pilotée par le parent (depuis un menu
+  // d'actions, par exemple) et le dialog n'affiche pas son propre déclencheur.
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function toDateTimeLocalValue(value: Date | string): string {
@@ -53,8 +57,20 @@ export function ScheduleAppointmentDialog({
   onSaved,
   triggerLabel,
   triggerVariant = "default",
+  open: controlledOpen,
+  onOpenChange,
 }: ScheduleAppointmentDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  function setOpen(nextOpen: boolean) {
+    if (isControlled) {
+      onOpenChange?.(nextOpen);
+    } else {
+      setUncontrolledOpen(nextOpen);
+    }
+  }
   const [patientId, setPatientId] = useState(appointment?.patientId ?? "");
   const [scheduledAt, setScheduledAt] = useState(
     appointment ? toDateTimeLocalValue(appointment.scheduledAt) : ""
@@ -161,13 +177,15 @@ export function ScheduleAppointmentDialog({
         if (nextOpen) reset();
       }}
     >
-      <DialogTrigger
-        render={
-          <Button type="button" variant={triggerVariant} size={appointment ? "sm" : "default"} />
-        }
-      >
-        {triggerLabel ?? (appointment ? "Modifier" : "Planifier un rendez-vous")}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger
+          render={
+            <Button type="button" variant={triggerVariant} size={appointment ? "sm" : "default"} />
+          }
+        >
+          {triggerLabel ?? (appointment ? "Modifier" : "Planifier un rendez-vous")}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>

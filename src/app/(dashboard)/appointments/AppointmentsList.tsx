@@ -1,6 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  CalendarCheckIcon,
+  CalendarXIcon,
+  DotsThreeIcon,
+  GearIcon,
+  PencilSimpleIcon,
+} from "@phosphor-icons/react";
 import type { AppointmentListItem } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -11,7 +19,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -21,6 +41,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
@@ -67,6 +95,9 @@ export function AppointmentsList() {
   const [appointmentToCancel, setAppointmentToCancel] = useState<AppointmentListItem | null>(
     null
   );
+  // Le dialog de reprogrammation n'est plus déclenché par un bouton de la ligne
+  // mais depuis le menu d'actions : il est donc piloté ici.
+  const [appointmentToEdit, setAppointmentToEdit] = useState<AppointmentListItem | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [view, setView] = useState<"liste" | "agenda">("liste");
 
@@ -141,19 +172,46 @@ export function AppointmentsList() {
       )}
 
       {isEmpty && (
-        <Card>
-          <CardContent className="py-6 text-center text-sm text-muted-foreground">
-            Aucun rendez-vous planifié pour le moment.
-          </CardContent>
-        </Card>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CalendarCheckIcon />
+            </EmptyMedia>
+            <EmptyTitle>Aucun rendez-vous planifié</EmptyTitle>
+            <EmptyDescription>
+              Planifiez un rendez-vous pour le retrouver ici et dans votre agenda.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <ScheduleAppointmentDialog onSaved={upsertLocal} />
+          </EmptyContent>
+        </Empty>
       )}
 
       {appointments && !isEmpty && (
         <Tabs value={view} onValueChange={(value) => setView(value as "liste" | "agenda")}>
-          <TabsList>
-            <TabsTrigger value="liste">Liste</TabsTrigger>
-            <TabsTrigger value="agenda">Agenda</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between gap-2">
+            <TabsList>
+              <TabsTrigger value="liste">Liste</TabsTrigger>
+              <TabsTrigger value="agenda">Agenda</TabsTrigger>
+            </TabsList>
+
+            {/* Les horaires d'ouverture ne se voient que dans la vue Agenda (ils
+                calibrent la plage horaire affichée) : le raccourci vers leur
+                réglage n'apparaît donc que là, à côté des types de rendez-vous. */}
+            {/* Vraie navigation vers une autre page : on stylise un <a> (via Link)
+                avec `buttonVariants` plutôt que d'utiliser <Button>, qui attend un
+                <button> natif et perd sinon ses sémantiques. */}
+            {view === "agenda" && (
+              <Link
+                href="/account?tab=agenda"
+                className={cn(buttonVariants({ variant: "outline" }), "gap-1")}
+              >
+                <GearIcon size={14} />
+                Régler mon agenda
+              </Link>
+            )}
+          </div>
 
           <TabsContent value="liste">
             <Table>
@@ -171,11 +229,9 @@ export function AppointmentsList() {
                 {appointments.map((appointment) => {
                   const status = getStatus(appointment, now);
                   const isCancelled = Boolean(appointment.cancelledAt);
-                  return (
-                    <TableRow
-                      key={appointment.id}
-                      className={isCancelled ? "opacity-60" : undefined}
-                    >
+
+                  const cells = (
+                    <>
                       <TableCell>
                         <button
                           type="button"
@@ -202,34 +258,107 @@ export function AppointmentsList() {
                       </TableCell>
                       <TableCell className="text-right">
                         {!isCancelled && (
-                          <div className="flex justify-end gap-2">
-                            <ScheduleAppointmentDialog
-                              appointment={appointment}
-                              onSaved={upsertLocal}
-                              triggerVariant="ghost"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setAppointmentToCancel(appointment)}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label="Plus d'actions"
+                                />
+                              }
                             >
-                              Annuler
-                            </Button>
-                          </div>
+                              <DotsThreeIcon size={18} weight="bold" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setAppointmentToEdit(appointment)}>
+                                <PencilSimpleIcon size={14} />
+                                Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => setAppointmentToCancel(appointment)}
+                              >
+                                <CalendarXIcon size={14} />
+                                Annuler
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </TableCell>
-                    </TableRow>
+                    </>
+                  );
+
+                  // Un rendez-vous annulé n'a plus d'action : pas de menu
+                  // contextuel non plus, sinon le clic droit ouvrirait un menu vide
+                  // (et bloquerait au passage le menu natif du navigateur).
+                  if (isCancelled) {
+                    return (
+                      <TableRow key={appointment.id} className="opacity-60">
+                        {cells}
+                      </TableRow>
+                    );
+                  }
+
+                  return (
+                    <ContextMenu key={appointment.id}>
+                      <ContextMenuTrigger render={<TableRow />}>{cells}</ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={() => setAppointmentToEdit(appointment)}>
+                          <PencilSimpleIcon size={14} />
+                          Modifier
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          variant="destructive"
+                          onClick={() => setAppointmentToCancel(appointment)}
+                        >
+                          <CalendarXIcon size={14} />
+                          Annuler
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   );
                 })}
               </TableBody>
             </Table>
+
+            {/* Ajout dans la continuité du tableau : après avoir parcouru ses
+                rendez-vous, on planifie le suivant sans remonter au bouton du
+                header. Discret (ghost) pour rester une action de second plan. */}
+            <div className="flex">
+              <ScheduleAppointmentDialog
+                onSaved={upsertLocal}
+                triggerLabel="+ Nouveau rendez-vous"
+                triggerVariant="ghost"
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="agenda">
-            <AppointmentsCalendar appointments={appointments} onSelectPatient={setOpenPatientId} />
+            <AppointmentsCalendar
+              appointments={appointments}
+              onSelectPatient={setOpenPatientId}
+              onEditAppointment={setAppointmentToEdit}
+              onCancelAppointment={setAppointmentToCancel}
+            />
           </TabsContent>
         </Tabs>
+      )}
+
+      {/* Monté à la demande et remonté à chaque rendez-vous (`key`) : le
+          formulaire s'initialise ainsi depuis le bon rendez-vous, sans avoir à
+          resynchroniser son état interne à l'ouverture. */}
+      {appointmentToEdit && (
+        <ScheduleAppointmentDialog
+          key={appointmentToEdit.id}
+          appointment={appointmentToEdit}
+          open
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) setAppointmentToEdit(null);
+          }}
+          onSaved={upsertLocal}
+        />
       )}
 
       <PatientDetailDrawer

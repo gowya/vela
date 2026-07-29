@@ -5,7 +5,12 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"
 
-function TooltipProvider({ delay = 0, ...props }: TooltipPrimitive.Provider.Props) {
+// Un tooltip qui sort à 0ms se déclenche sur le moindre passage de souris et
+// transforme un survol de la barre latérale en clignotement. Le délai laisse
+// passer les survols de transit : seule une intention de lecture l'ouvre.
+const TOOLTIP_DELAY_MS = 400
+
+function TooltipProvider({ delay = TOOLTIP_DELAY_MS, ...props }: TooltipPrimitive.Provider.Props) {
   return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />
 }
 
@@ -23,14 +28,9 @@ function TooltipContent({
   sideOffset = 6,
   align = "center",
   alignOffset = 0,
-  hidden,
   ...props
 }: TooltipPrimitive.Popup.Props &
-  Pick<TooltipPrimitive.Positioner.Props, "side" | "sideOffset" | "align" | "alignOffset"> & {
-    hidden?: boolean
-  }) {
-  if (hidden) return null
-
+  Pick<TooltipPrimitive.Positioner.Props, "side" | "sideOffset" | "align" | "alignOffset">) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner
@@ -43,7 +43,18 @@ function TooltipContent({
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            "z-50 origin-(--transform-origin) rounded-md bg-foreground px-2 py-1 text-[0.7rem] text-background shadow-md duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "z-50 origin-(--transform-origin) rounded-md bg-foreground px-2 py-1 text-[0.7rem] text-background shadow-md",
+            // Fondu seul, sans zoom : le zoom-95 donnait un « pop » qui attire
+            // l'œil sur une info secondaire. Ouverture douce et sortie plus
+            // rapide (on ne fait pas attendre quelqu'un qui a déjà quitté).
+            "data-open:animate-in data-open:fade-in-0 data-open:duration-200 data-open:ease-out",
+            "data-closed:animate-out data-closed:fade-out-0 data-closed:duration-100 data-closed:ease-in",
+            // Dérive de 4px depuis le bord ancré : suggère d'où sort le tooltip
+            // sans le faire changer de taille.
+            "data-open:data-[side=top]:slide-in-from-bottom-1",
+            "data-open:data-[side=bottom]:slide-in-from-top-1",
+            "data-open:data-[side=left]:slide-in-from-right-1",
+            "data-open:data-[side=right]:slide-in-from-left-1",
             className
           )}
           {...props}

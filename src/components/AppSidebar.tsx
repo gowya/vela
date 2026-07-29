@@ -16,7 +16,6 @@ import {
   SignOutIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
-import { Logo } from "@/components/ui/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +31,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -63,10 +61,7 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader className="flex-row items-center justify-between px-2 pt-1">
-        <div className="flex items-center overflow-hidden group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-          <Logo size={36} />
-        </div>
+      <SidebarHeader className="flex-row items-center justify-center px-2 pt-1">
         <SidebarTrigger className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
       </SidebarHeader>
 
@@ -141,8 +136,6 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   );
 }

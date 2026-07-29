@@ -817,6 +817,25 @@ button.rbc-input::-moz-focus-inner {
   --event-color: var(--foreground);
   --event-border: var(--border);
 }
+/* Rendez-vous annulé : rendu « désactivé » (gris atténué, titre barré) pour
+   qu'il ne concurrence plus visuellement les rendez-vous actifs, mais
+   volontairement toujours cliquable — ouvrir la fiche patient depuis un
+   rendez-vous annulé reste un besoin légitime. D'où l'absence de
+   `pointer-events: none` et le maintien d'un état de survol lisible. */
+.rbc-event.event-variant-cancelled {
+  --event-bg: var(--muted);
+  --event-color: var(--muted-foreground);
+  --event-border: var(--border);
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+.rbc-event.event-variant-cancelled:hover {
+  --event-bg: var(--muted);
+  --event-color: var(--foreground);
+  --event-border: var(--border);
+  opacity: 1;
+  box-shadow: none;
+}
 .event-component {
   background-color: var(--primary);
   color: var(--primary-foreground);
