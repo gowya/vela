@@ -661,9 +661,9 @@ export function ConsultationEditor({
         </DialogContent>
       </Dialog>
 
-      {historyOpen && currentIdRef.current && (
+      {historyOpen && consultationRecordId && (
         <ConsultationVersionHistory
-          consultationId={currentIdRef.current}
+          consultationId={consultationRecordId}
           open={historyOpen}
           onOpenChange={setHistoryOpen}
           currentContent={content}
