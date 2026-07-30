@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PencilSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ComboboxMultiple } from "@/components/ui/combobox";
@@ -22,16 +22,18 @@ export function InlineMultiSelectFieldEditor({
   options,
   placeholder,
 }: InlineMultiSelectFieldEditorProps) {
+  const [prevInitialValue, setPrevInitialValue] = useState(initialValue);
   const [value, setValue] = useState(initialValue);
   const [draftValue, setDraftValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  if (initialValue !== prevInitialValue) {
+    setPrevInitialValue(initialValue);
     setValue(initialValue);
     setDraftValue(initialValue);
-  }, [initialValue]);
+  }
 
   const currentLabels = options
     .filter((option) => value.includes(option.value))

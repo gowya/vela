@@ -92,14 +92,24 @@ export function ConsultationVersionHistory({
 
   const selectRequestRef = useRef(0);
 
-  useEffect(() => {
-    if (!open) return;
-
-    let cancelled = false;
+  // Ouverture (ou changement de consultation/refreshToken pendant que le panneau
+  // est ouvert) : repart d'un état vierge avant de recharger la liste des
+  // versions. Ajustement pendant le rendu (et non un effect) puisqu'il ne fait
+  // que dériver de ces props.
+  const resetKey = `${open}:${consultationId}:${refreshToken}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (open && resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     setVersions(null);
     setSelectedId(CURRENT_VERSION_ID);
     setSelectedDetail(null);
     setAutoExpanded(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
 
     fetch(`/api/consultations/${consultationId}/versions`)
       .then((response) => response.json())

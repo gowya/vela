@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -58,11 +58,13 @@ function NewConsultationPatientPicker({
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    setSelectedPatientId("");
-  }, [open]);
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setError(null);
+      setSelectedPatientId("");
+    }
+    setOpen(nextOpen);
+  }
 
   function handleStart() {
     if (!selectedPatientId) {
@@ -74,7 +76,7 @@ function NewConsultationPatientPicker({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant={triggerVariant} />}>{triggerLabel}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

@@ -9,7 +9,7 @@ import type { NextRequest } from "next/server";
 // nonce posé sur `request.headers` et l'applique automatiquement à ses propres
 // scripts. Le script inline de src/app/layout.tsx (anti-flash thème sombre)
 // reçoit ce même nonce explicitement.
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
   // Le Fast Refresh de `next dev` évalue les modules rechargés via `eval()` :

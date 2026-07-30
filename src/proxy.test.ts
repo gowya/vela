@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { middleware } from "./middleware";
+import { proxy } from "./proxy";
 
-describe("middleware", () => {
+describe("proxy", () => {
   it("pose les headers de sécurité attendus (app manipulant des données de santé)", () => {
-    const response = middleware(new NextRequest("http://localhost/patients"));
+    const response = proxy(new NextRequest("http://localhost/patients"));
 
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(response.headers.get("X-Frame-Options")).toBe("DENY");
@@ -13,8 +13,8 @@ describe("middleware", () => {
   });
 
   it("génère une CSP stricte avec un nonce différent à chaque requête", () => {
-    const responseA = middleware(new NextRequest("http://localhost/"));
-    const responseB = middleware(new NextRequest("http://localhost/"));
+    const responseA = proxy(new NextRequest("http://localhost/"));
+    const responseB = proxy(new NextRequest("http://localhost/"));
 
     const cspA = responseA.headers.get("Content-Security-Policy");
     const cspB = responseB.headers.get("Content-Security-Policy");

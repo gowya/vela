@@ -42,14 +42,14 @@ export function TemplatesManagerDialog() {
     loadTemplates();
   }, [open]);
 
-  useEffect(() => {
-    if (!usingTemplate) return;
+  function startPickingPatientFor(template: ConsultationTemplate) {
+    setUsingTemplate(template);
     setSelectedPatientId("");
     setPickError(null);
     fetch("/api/patients")
       .then((response) => response.json())
       .then((data) => setPatients(data.patients ?? []));
-  }, [usingTemplate]);
+  }
 
   function loadTemplates() {
     fetch("/api/consultation-templates")
@@ -127,7 +127,7 @@ export function TemplatesManagerDialog() {
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => setUsingTemplate(template)}
+                      onClick={() => startPickingPatientFor(template)}
                     >
                       Nouvelle consultation
                     </Button>

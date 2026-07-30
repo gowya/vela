@@ -92,6 +92,10 @@ export function ConsultationEditor({
   // deux doivent rester utilisables en même temps.
   const [showPatientPanel, setShowPatientPanel] = useState(false);
 
+  // Miroir de currentIdRef pour le rendu : la ref porte la valeur "live" utilisée
+  // par le flux de sauvegarde (lectures synchrones hors render), ce state ne sert
+  // qu'à faire réapparaître l'upload de pièces jointes une fois l'id obtenu.
+  const [consultationRecordId, setConsultationRecordId] = useState(consultationId);
   // Historique de versions (retour test user #01, C3).
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyRefreshToken, setHistoryRefreshToken] = useState(0);
@@ -183,7 +187,6 @@ export function ConsultationEditor({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultationId, patientId, templateId]);
 
   const save = useCallback(
@@ -227,6 +230,7 @@ export function ConsultationEditor({
 
           const data = await response.json();
           currentIdRef.current = data.consultation.id;
+          setConsultationRecordId(data.consultation.id);
           updatedAtRef.current = new Date(data.consultation.updatedAt).toISOString();
           setStatus("saved");
           router.replace(`/consultations/${data.consultation.id}`);
@@ -609,7 +613,7 @@ export function ConsultationEditor({
             content={content}
             onChange={setContent}
             ensureConsultationId={ensureConsultationId}
-            consultationId={currentIdRef.current}
+            consultationId={consultationRecordId}
           />
         </div>
       )}
@@ -657,9 +661,9 @@ export function ConsultationEditor({
         </DialogContent>
       </Dialog>
 
-      {historyOpen && currentIdRef.current && (
+      {historyOpen && consultationRecordId && (
         <ConsultationVersionHistory
-          consultationId={currentIdRef.current}
+          consultationId={consultationRecordId}
           open={historyOpen}
           onOpenChange={setHistoryOpen}
           currentContent={content}

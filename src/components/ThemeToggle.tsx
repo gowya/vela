@@ -9,6 +9,11 @@ export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
+    // Lecture après montage de la classe posée par le script anti-flash de
+    // layout.tsx : le serveur ignore la préférence stockée côté client, donc
+    // ce n'est pas un state dérivé de props mais une vraie synchronisation
+    // avec le DOM (nécessaire pour éviter un mismatch d'hydratation).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsDark(document.documentElement.classList.contains("dark"));
   }, []);
 
