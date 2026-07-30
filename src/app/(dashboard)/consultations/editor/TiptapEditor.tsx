@@ -38,11 +38,21 @@ interface TiptapEditorProps {
   // Les pièces jointes se rattachent à une consultation (clé étrangère) : on les
   // désactive dans les contextes qui n'en ont pas, comme l'éditeur de modèle.
   allowAttachments?: boolean;
+  // Aperçu en lecture seule d'une version passée (panneau d'historique) : même
+  // rendu riche que l'éditeur, mais aucune frappe/commande ne doit s'appliquer.
+  editable?: boolean;
 }
 
 export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
   function TiptapEditor(
-    { content, onChange, ensureConsultationId, consultationId, allowAttachments = true },
+    {
+      content,
+      onChange,
+      ensureConsultationId,
+      consultationId,
+      allowAttachments = true,
+      editable = true,
+    },
     ref
   ) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +62,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
     const editor = useEditor({
       immediatelyRender: false,
+      editable,
       extensions: [
         StarterKit.configure({
           blockquote: false,
@@ -178,7 +189,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
 
         {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
 
-        {editor && <SelectionToolbar editor={editor} />}
+        {editor && editable && <SelectionToolbar editor={editor} />}
         <EditorContent editor={editor} className="rounded-md" />
       </div>
     );

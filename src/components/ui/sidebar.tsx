@@ -112,7 +112,7 @@ function SidebarProvider({
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <TooltipProvider delay={0}>
+      <TooltipProvider>
         <div
           data-slot="sidebar-wrapper"
           style={
@@ -257,9 +257,11 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onClick={toggleSidebar}
       title="Basculer la barre latérale"
       className={cn(
-        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex",
-        "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
-        "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
+        // Ce rail ne fait que basculer ouvert/fermé au clic (toggleSidebar) : pas de
+        // drag pour redimensionner, donc un curseur de redimensionnement (cursor-*-resize)
+        // promettait une interaction qui n'existe pas. Un simple curseur pointeur reflète
+        // ce que le rail fait réellement.
+        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 cursor-pointer transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex",
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
@@ -400,7 +402,13 @@ function SidebarMenuButton({
     },
   })
 
-  if (!tooltip) {
+  // Le tooltip ne sert qu'en mode réduit (icônes seules, libellé masqué) : on ne
+  // monte le composant Tooltip que dans ce cas précis plutôt que de le garder
+  // toujours monté et de masquer son contenu avec `hidden` — sinon l'état
+  // "ouvert" d'un tooltip survolé pendant qu'il était masqué reste actif en
+  // interne, et ressurgit d'un coup pour tous les items dès qu'on replie la
+  // sidebar (bug constaté : tous les tooltips apparaissent en même temps).
+  if (!tooltip || state !== "collapsed" || isMobile) {
     return element
   }
 
@@ -409,7 +417,7 @@ function SidebarMenuButton({
   return (
     <Tooltip>
       <TooltipTrigger render={element} />
-      <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile} {...tooltipProps} />
+      <TooltipContent side="right" align="center" {...tooltipProps} />
     </Tooltip>
   )
 }

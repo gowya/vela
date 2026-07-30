@@ -266,7 +266,6 @@ export function ConsultationsList() {
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => {
               setSelectionMode((previous) => !previous);
               setSelectedIds(new Set());

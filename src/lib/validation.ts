@@ -179,6 +179,13 @@ export const consultationUpdateSchema = z.object({
   content: consultationContentSchema.optional(),
 });
 
+// --- Historique de versions ---
+// Un checkpoint manuel peut recevoir un nom optionnel (bouton "+" du panneau
+// d'historique) ; le raccourci clavier envoie ce même schéma sans `label`.
+export const consultationVersionCreateSchema = z.object({
+  label: optionalTrimmedString,
+});
+
 // --- Rendez-vous ---
 // Contrairement à lastAppointmentAt sur les patients (un rendez-vous passé, légitime),
 // planifier ou reprogrammer un rendez-vous dans le passé n'a pas de sens (bug B2).
