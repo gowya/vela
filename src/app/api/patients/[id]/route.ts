@@ -5,6 +5,7 @@ import pool from "@/lib/db";
 import { LAST_APPOINTMENT_AT_SQL, NEXT_APPOINTMENT_AT_SQL } from "@/lib/appointments";
 import { mapPatientRow } from "@/lib/mappers";
 import { patientUpdateSchema } from "@/lib/validation";
+import { logServerError } from "@/lib/log-server-error";
 
 // Suppose que la requête aliase `patients` en `p` (voir LAST/NEXT_APPOINTMENT_AT_SQL).
 const PATIENT_COLUMNS = `p.id, p.practitioner_id, p.first_name, p.last_name, p.email, p.phone, p.birth_date,
@@ -201,7 +202,8 @@ export async function PATCH(
       patient: mapPatientRow(rows[0]),
       customFields: updatedCustomFields,
     });
-  } catch {
+  } catch (error) {
+    logServerError("patients.update", error);
     await client.query("ROLLBACK");
     return NextResponse.json(
       { error: "La mise à jour du patient a échoué." },

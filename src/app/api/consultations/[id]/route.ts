@@ -5,6 +5,7 @@ import pool from "@/lib/db";
 import { deriveContentText } from "@/lib/consultation-utils";
 import { mapConsultationRow } from "@/lib/mappers";
 import { consultationUpdateSchema } from "@/lib/validation";
+import { logServerError } from "@/lib/log-server-error";
 
 const CONSULTATION_COLUMNS = `c.id, c.patient_id, c.template_id, c.appointment_id, c.title, c.content,
   c.content_text, c.date, c.updated_at, c.created_at`;
@@ -180,7 +181,8 @@ export async function PATCH(
 
     await client.query("COMMIT");
     return NextResponse.json({ consultation: mapConsultationRow(rows[0]) });
-  } catch {
+  } catch (error) {
+    logServerError("consultations.update", error);
     await client.query("ROLLBACK");
     return NextResponse.json(
       { error: "La mise à jour de la consultation a échoué." },

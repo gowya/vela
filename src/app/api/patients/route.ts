@@ -5,6 +5,7 @@ import pool from "@/lib/db";
 import { LAST_APPOINTMENT_AT_SQL, NEXT_APPOINTMENT_AT_SQL } from "@/lib/appointments";
 import { mapPatientRow } from "@/lib/mappers";
 import { patientCreateSchema } from "@/lib/validation";
+import { logServerError } from "@/lib/log-server-error";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -154,7 +155,8 @@ export async function POST(request: Request) {
     await client.query("COMMIT");
 
     return NextResponse.json({ patient: mapPatientRow(patient) }, { status: 201 });
-  } catch {
+  } catch (error) {
+    logServerError("patients.create", error);
     await client.query("ROLLBACK");
     return NextResponse.json(
       { error: "La création du patient a échoué." },

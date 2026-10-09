@@ -26,6 +26,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { DateTimePicker } from "@/components/ui/date-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { fetchJson } from "@/lib/fetch-json";
 import { PatientDetailDrawer } from "@/app/(dashboard)/patients/PatientDetailDrawer";
 import {
   EMPTY_CONSULTATION_CONTENT,
@@ -66,6 +67,7 @@ export function ConsultationEditor({
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [title, setTitle] = useState("");
   // Brouillon jamais sauvegardé : la date par défaut est "maintenant", comme le
   // ferait le serveur (DEFAULT now()) — juste rendue visible immédiatement dans
@@ -121,21 +123,26 @@ export function ConsultationEditor({
     let cancelled = false;
 
     async function load() {
+      let consultationMissing = false;
       const requests: Promise<void>[] = [
-        fetch(`/api/patients/${patientId}`)
-          .then((response) => response.json())
-          .then((data) => {
-            if (!cancelled) setPatient(data.patient ?? null);
-          }),
+        fetchJson<{ patient: Patient }>(`/api/patients/${patientId}`).then((data) => {
+          if (!cancelled) setPatient(data?.patient ?? null);
+        }),
       ];
 
       if (consultationId) {
         requests.push(
-          fetch(`/api/consultations/${consultationId}`)
-            .then((response) => response.json())
-            .then((data) => {
-              if (cancelled || !data.consultation) return;
-              const consultation: Consultation = data.consultation;
+          fetchJson<{ consultation: Consultation }>(`/api/consultations/${consultationId}`).then(
+            (data) => {
+              if (cancelled) return;
+              // Sans la consultation, l'éditeur s'afficherait vide : le praticien
+              // croirait ses notes perdues, et taper dedans écraserait le contenu.
+              if (!data?.consultation) {
+                consultationMissing = true;
+                setLoadFailed(true);
+                return;
+              }
+              const consultation = data.consultation;
               updatedAtRef.current = new Date(consultation.updatedAt).toISOString();
               setTitle(consultation.title ?? "");
               setDate(toDateTimeLocalValue(consultation.date));
@@ -143,38 +150,42 @@ export function ConsultationEditor({
               if (consultation.templateId) {
                 setSelectedTemplateId(consultation.templateId);
               }
-            })
+            }
+          )
         );
       } else {
         requests.push(
-          fetch("/api/consultation-templates")
-            .then((response) => response.json())
-            .then((data) => {
-              if (!cancelled) setAvailableTemplates(data.templates ?? []);
-            })
+          fetchJson<{ templates: ConsultationTemplate[] }>("/api/consultation-templates").then(
+            (data) => {
+              if (!cancelled) setAvailableTemplates(data?.templates ?? []);
+            }
+          )
         );
       }
 
       if (templateId) {
         requests.push(
-          fetch(`/api/consultation-templates/${templateId}`)
-            .then((response) => response.json())
-            .then((data) => {
-              if (cancelled || !data.template) return;
-              // Brouillon démarré depuis un modèle (jamais un existant) : on
-              // pré-remplit uniquement le contenu. Le titre reste au praticien —
-              // le renseigner avec le nom du modèle ferait doublon avec l'info
-              // de modèle déjà affichée dans la liste des consultations.
-              if (!consultationId) {
-                setContent(data.template.content);
-              }
-            })
+          fetchJson<{ template: ConsultationTemplate }>(
+            `/api/consultation-templates/${templateId}`
+          ).then((data) => {
+            if (cancelled || !data?.template) return;
+            // Brouillon démarré depuis un modèle (jamais un existant) : on
+            // pré-remplit uniquement le contenu. Le titre reste au praticien —
+            // le renseigner avec le nom du modèle ferait doublon avec l'info
+            // de modèle déjà affichée dans la liste des consultations.
+            if (!consultationId) {
+              setContent(data.template.content);
+            }
+          })
         );
       }
 
       await Promise.all(requests);
       if (!cancelled) {
         setIsLoading(false);
+        // Autosave jamais activé si la consultation n'a pas chargé : il
+        // enverrait un contenu vide à la place des vraies notes.
+        if (consultationMissing) return;
         // Laisse le prochain tick passer pour ne pas déclencher l'autosave
         // sur les valeurs qu'on vient de charger.
         setTimeout(() => {
@@ -545,6 +556,7 @@ export function ConsultationEditor({
           placeholder="Titre de la consultation (optionnel)"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
+          disabled={loadFailed}
           variant="ghost"
           className="flex-1 text-xl font-semibold"
         />
@@ -553,13 +565,25 @@ export function ConsultationEditor({
           hideLabel
           value={date}
           onValueChange={setDate}
+          disabled={loadFailed}
           className="w-auto shrink-0"
         />
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {isLoading ? (
+      {loadFailed ? (
+        <div className="flex flex-col items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm text-destructive">
+            Impossible de charger cette consultation. Vos notes ne sont pas perdues : rechargez la
+            page pour réessayer.
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => window.location.reload()}>
+            <ArrowsClockwiseIcon />
+            Recharger
+          </Button>
+        </div>
+      ) : isLoading ? (
         <div className="flex flex-col gap-4">
           <Skeleton className="h-6 w-64" />
           <Skeleton className="h-4 w-full" />

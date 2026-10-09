@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { fetchJson } from "@/lib/fetch-json";
 import { TiptapEditor } from "./editor/TiptapEditor";
 
 // Sentinel distinguant "l'état courant de l'éditeur" (jamais fetché, jamais
@@ -79,6 +80,7 @@ export function ConsultationVersionHistory({
   onRestored,
 }: ConsultationVersionHistoryProps) {
   const [versions, setVersions] = useState<ConsultationVersion[] | null>(null);
+  const [versionsFailed, setVersionsFailed] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(CURRENT_VERSION_ID);
   const [selectedDetail, setSelectedDetail] = useState<ConsultationVersionDetail | null>(null);
   const [autoExpanded, setAutoExpanded] = useState(false);
@@ -101,6 +103,7 @@ export function ConsultationVersionHistory({
   if (open && resetKey !== prevResetKey) {
     setPrevResetKey(resetKey);
     setVersions(null);
+    setVersionsFailed(false);
     setSelectedId(CURRENT_VERSION_ID);
     setSelectedDetail(null);
     setAutoExpanded(false);
@@ -111,11 +114,16 @@ export function ConsultationVersionHistory({
 
     let cancelled = false;
 
-    fetch(`/api/consultations/${consultationId}/versions`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (!cancelled) setVersions(data.versions ?? []);
-      });
+    fetchJson<{ versions: ConsultationVersion[] }>(
+      `/api/consultations/${consultationId}/versions`
+    ).then((data) => {
+      if (cancelled) return;
+      if (!data) {
+        setVersionsFailed(true);
+        return;
+      }
+      setVersions(data.versions ?? []);
+    });
 
     return () => {
       cancelled = true;
@@ -128,13 +136,18 @@ export function ConsultationVersionHistory({
     if (versionId === CURRENT_VERSION_ID) return;
 
     const requestId = ++selectRequestRef.current;
-    fetch(`/api/consultations/${consultationId}/versions/${versionId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (selectRequestRef.current === requestId && data.version) {
-          setSelectedDetail(data.version);
-        }
-      });
+    fetchJson<{ version: ConsultationVersionDetail }>(
+      `/api/consultations/${consultationId}/versions/${versionId}`
+    ).then((data) => {
+      if (selectRequestRef.current !== requestId) return;
+      if (!data?.version) {
+        // Sinon l'aperçu resterait en chargement indéfiniment.
+        setSelectedId(CURRENT_VERSION_ID);
+        toast.error("Impossible d'afficher cette version.");
+        return;
+      }
+      setSelectedDetail(data.version);
+    });
   }
 
   async function handleCreateVersion() {
@@ -244,7 +257,14 @@ export function ConsultationVersionHistory({
                 </div>
               )}
 
-              {versions === null && (
+              {versionsFailed && (
+                <p className="px-2 py-1.5 text-xs/relaxed text-destructive">
+                  Impossible de charger l&apos;historique. Fermez puis rouvrez le panneau pour
+                  réessayer.
+                </p>
+              )}
+
+              {versions === null && !versionsFailed && (
                 <div className="flex flex-col gap-1 p-1">
                   <Skeleton className="h-6 w-full" />
                   <Skeleton className="h-6 w-full" />

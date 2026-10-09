@@ -7,6 +7,7 @@ import {
   customFieldDefinitionCreateSchema,
   customFieldReorderSchema,
 } from "@/lib/validation";
+import { logServerError } from "@/lib/log-server-error";
 
 const CUSTOM_FIELD_COLUMNS = `id, practitioner_id, field_name, field_type, options, allow_multiple,
   display_order, show_in_table, created_at`;
@@ -83,7 +84,8 @@ export async function PATCH(request: Request) {
     await client.query("COMMIT");
 
     return NextResponse.json({ customFields: rows.map(mapCustomFieldDefinitionRow) });
-  } catch {
+  } catch (error) {
+    logServerError("custom-fields.reorder", error);
     await client.query("ROLLBACK");
     return NextResponse.json(
       { error: "Le réordonnancement a échoué." },
