@@ -126,6 +126,37 @@ application. Deux options selon la situation :
   la console Clever Cloud de l'addon Postgres — aucune restauration n'est
   possible depuis l'application elle-même.
 
+## 7. Appliquer les migrations de schéma
+
+Les fichiers de `src/lib/migrations/` ne s'appliquent jamais tout seuls : ni le
+merge ni le déploiement Vercel ne touchent la base. La table `schema_migrations`
+garde la trace de ceux déjà joués. Une migration mergée mais pas appliquée casse
+la prod (cas réel : la 014 manquante faisait échouer toute sauvegarde de
+consultation en 500).
+
+```bash
+npm run db:migrate:status   # liste les migrations en attente (exit 1 s'il y en a)
+npm run db:migrate          # les applique, une transaction par fichier
+```
+
+Les deux commandes visent le `DATABASE_URL` que charge `next dev`
+(`.env.development.local` en priorité, puis `.env.local`), à vérifier sur la
+ligne `Base :` affichée en premier. **À lancer après chaque merge sur `main`
+qui ajoute un fichier de migration**, idéalement avant que le déploiement
+n'arrive en prod (les migrations restent additives : l'ancien code tourne
+encore avec le nouveau schéma).
+
+Si une migration échoue, elle est annulée entièrement et les suivantes ne sont
+pas jouées : corriger le fichier, puis relancer.
+
+Sur une base créée avant ce suivi (table `schema_migrations` absente), vérifier
+d'abord à la main que le schéma correspond bien à toutes les migrations, puis
+les marquer comme appliquées sans les exécuter :
+
+```bash
+npm run db:migrate -- --baseline
+```
+
 ## Limites de cette approche
 
 Ce runbook suffit tant que ces opérations restent occasionnelles et

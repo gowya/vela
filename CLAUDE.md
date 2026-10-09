@@ -64,6 +64,7 @@ soin-app/
 - `npm run start` — démarre le serveur en mode production
 - `npm run lint` — vérifie le code avec ESLint
 - `npm run test` — lance toute la suite de tests (unitaires + intégration, nécessite `npm run test:db:up` au préalable)
+- `npm run db:migrate:status` / `npm run db:migrate` — vérifie / applique les migrations en attente sur la base que charge `next dev` (voir `claude/admin_runbook.md`, section 7). Ne jamais lancer `db:migrate` sur Neon sans accord explicite.
 
 # Important Rules
 

@@ -2,6 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { ensureTrackingTable, recordMigrations } from "./migrate.mjs";
 
 const { Client } = pg;
 
@@ -30,6 +31,10 @@ export async function setupTestDb(databaseUrl) {
       const migrationSql = await readFile(path.join(MIGRATIONS_DIR, file), "utf-8");
       await client.query(migrationSql);
     }
+
+    // Même trace qu'en prod, pour que `db:migrate` voie la base de test à jour.
+    await ensureTrackingTable(client);
+    await recordMigrations(client, migrationFiles);
   } finally {
     await client.end();
   }
