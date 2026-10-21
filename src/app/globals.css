@@ -167,6 +167,19 @@
   }
 }
 
+/* Autofill navigateur : Chrome/Safari imposent un fond bleu (#E8F0FE) qui
+   casse la palette sable. On garde le fond du champ en retardant
+   indéfiniment la transition de couleur ; hors @layer pour passer devant
+   `transition-colors` des utilitaires, et sans box-shadow pour ne pas
+   écraser l'anneau de focus. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--foreground);
+  caret-color: var(--foreground);
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
 @theme inline {
   --font-sans: var(--font-inter);
   --font-heading: var(--font-inter);

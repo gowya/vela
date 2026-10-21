@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { PasswordInput } from "./PasswordInput";
+import { authButtonClassName, authFieldClassName, authLabelClassName } from "./styles";
 
-export function SignupForm({ onToggle }: { onToggle: () => void }) {
+export function SignupForm() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -73,9 +75,9 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col items-start gap-3">
-      <div className="w-full">
-        <Label htmlFor="signup-email" className="mb-1">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="signup-email" className={authLabelClassName}>
           Email
         </Label>
         <Input
@@ -85,12 +87,15 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          className={authFieldClassName}
         />
       </div>
 
-      <div className="w-full">
-        <div className="mb-1 flex items-center justify-between">
-          <Label htmlFor="signup-password">Mot de passe</Label>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="signup-password" className={authLabelClassName}>
+            Mot de passe
+          </Label>
           {passwordStrength && (
             <span
               aria-label={`Force du mot de passe : ${passwordStrength}`}
@@ -104,21 +109,29 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
             </span>
           )}
         </div>
-        <Input
+        <PasswordInput
           id="signup-password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={8}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          aria-invalid={passwordError ? true : undefined}
+          aria-describedby="signup-password-hint"
+          className={authFieldClassName}
         />
-        {passwordError && <p className="mt-1 text-sm text-destructive">{passwordError}</p>}
+        <p
+          id="signup-password-hint"
+          className={passwordError ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+        >
+          {passwordError ?? "8 caractères minimum."}
+        </p>
       </div>
 
-      <div className="mt-1 flex items-start gap-2">
+      <div className="flex items-start gap-2">
         <Checkbox
           id="signup-consent"
+          className="mt-0.5"
           checked={consent}
           onCheckedChange={(checked) => {
             setConsent(checked === true);
@@ -132,8 +145,8 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
           htmlFor="signup-consent"
           className={
             consentError
-              ? "block text-sm font-normal text-destructive"
-              : "block text-sm font-normal text-muted-foreground"
+              ? "block text-sm leading-relaxed font-normal text-destructive"
+              : "block text-sm leading-relaxed font-normal text-muted-foreground"
           }
         >
           J&apos;accepte que mes données soient traitées conformément à la{" "}
@@ -149,19 +162,15 @@ export function SignupForm({ onToggle }: { onToggle: () => void }) {
         </Label>
       </div>
 
-      {error && <p className="w-full text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
-        {isSubmitting ? "Création..." : "Créer mon compte"}
+      <Button type="submit" size="lg" disabled={isSubmitting} className={authButtonClassName}>
+        {isSubmitting ? "Création…" : "Créer mon compte"}
       </Button>
-
-      <button
-        type="button"
-        onClick={onToggle}
-        className="mt-1 w-full text-center text-xs/relaxed text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-      >
-        Se connecter
-      </button>
     </form>
   );
 }

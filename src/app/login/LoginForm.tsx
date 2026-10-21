@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "./PasswordInput";
+import { authButtonClassName, authFieldClassName, authLabelClassName } from "./styles";
 
-export function LoginForm({ onToggle }: { onToggle: () => void }) {
+export function LoginForm() {
   const router = useRouter();
   const callbackUrl = "/";
 
@@ -39,9 +41,9 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col items-start gap-3">
-      <div className="w-full">
-        <Label htmlFor="email" className="mb-1">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="email" className={authLabelClassName}>
           Email
         </Label>
         <Input
@@ -50,37 +52,42 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
           autoComplete="email"
           required
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setError(null);
+          }}
+          aria-invalid={error ? true : undefined}
+          className={authFieldClassName}
         />
       </div>
 
-      <div className="w-full">
-        <Label htmlFor="password" className="mb-1">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="password" className={authLabelClassName}>
           Mot de passe
         </Label>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
           required
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setError(null);
+          }}
+          aria-invalid={error ? true : undefined}
+          className={authFieldClassName}
         />
       </div>
 
-      {error && <p className="w-full text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
-        {isSubmitting ? "Connexion..." : "Se connecter"}
+      <Button type="submit" size="lg" disabled={isSubmitting} className={authButtonClassName}>
+        {isSubmitting ? "Connexion…" : "Se connecter"}
       </Button>
-
-      <button
-        type="button"
-        onClick={onToggle}
-        className="mt-1 w-full text-center text-xs/relaxed text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-      >
-        Créer un compte
-      </button>
     </form>
   );
 }
