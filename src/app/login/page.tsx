@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,54 +13,84 @@ function VerificationNotice() {
   const verification = searchParams.get("verification");
   const session = searchParams.get("session");
 
-  if (session === "expired") {
-    return (
-      <p className="w-full text-center text-sm text-destructive">
-        Votre session n&apos;est plus valide. Reconnectez-vous.
-      </p>
-    );
-  }
+  const message =
+    session === "expired"
+      ? "Votre session n'est plus valide. Reconnectez-vous."
+      : verification === "expired"
+        ? "Le lien de confirmation a expiré. Renvoyez un email depuis votre compte."
+        : null;
 
-  if (verification !== "expired") return null;
+  if (!message) return null;
 
   return (
-    <p className="w-full text-center text-sm text-destructive">
-      Le lien de confirmation a expiré. Renvoyez un email depuis votre compte.
+    <p
+      role="status"
+      className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+    >
+      {message}
     </p>
   );
 }
 
+const legalLinks = [
+  { href: "/confidentialite", label: "Confidentialité" },
+  { href: "/mentions-legales", label: "Mentions légales" },
+  { href: "/cgu", label: "CGU" },
+];
+
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const isLogin = mode === "login";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-[463px]">
-        <CardContent className="flex flex-col items-center gap-10 px-14 py-12">
-          <Logo size={72} />
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
+      <main className="flex w-full max-w-[420px] flex-col items-center gap-8">
+        <Logo size={64} />
 
-          <div className="flex flex-col items-center gap-1 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              {mode === "login" ? "Connectez-vous à votre espace" : "Créez votre espace"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {mode === "login"
-                ? "Retrouvez votre patientèle et vos consultations."
-                : "Quelques informations pour commencer."}
-            </p>
+        <Card className="w-full gap-0 py-0 shadow-sm">
+          <CardContent className="flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-8">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-lg font-semibold tracking-tight text-foreground">
+                {isLogin ? "Connexion" : "Créer votre espace"}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isLogin
+                  ? "Retrouvez votre patientèle et vos consultations."
+                  : "Un email et un mot de passe suffisent pour commencer."}
+              </p>
+            </div>
+
+            <Suspense fallback={null}>
+              <VerificationNotice />
+            </Suspense>
+
+            {isLogin ? <LoginForm /> : <SignupForm />}
+          </CardContent>
+
+          <div className="border-t px-6 py-4 text-center text-sm text-muted-foreground sm:px-8">
+            {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
+            <button
+              type="button"
+              onClick={() => setMode(isLogin ? "signup" : "login")}
+              className="rounded-sm font-medium text-primary underline-offset-4 dark:text-foreground dark:underline outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/30"
+            >
+              {isLogin ? "Créer un compte" : "Se connecter"}
+            </button>
           </div>
+        </Card>
 
-          <Suspense fallback={null}>
-            <VerificationNotice />
-          </Suspense>
-
-          {mode === "login" ? (
-            <LoginForm onToggle={() => setMode("signup")} />
-          ) : (
-            <SignupForm onToggle={() => setMode("login")} />
-          )}
-        </CardContent>
-      </Card>
+        <nav aria-label="Informations légales">
+          <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {legalLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="underline-offset-4 hover:text-foreground hover:underline">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </main>
     </div>
   );
 }
