@@ -1,8 +1,33 @@
 # Vela
 
-Vela est un outil de suivi patient destiné aux praticiens de l'accompagnement humain (psychologues, sexologues, hypnothérapeutes, coachs relationnels, sophrologues, naturopathes). L'application permet la gestion de patientèle, l'authentification des praticiens et le suivi de consultations, avec une exigence forte de discrétion, de rigueur (RGPD/HDS) et de sobriété visuelle.
+**Suivi patient pour les praticiens de l'accompagnement** — psychologues, sexologues, hypnothérapeutes, coachs, sophrologues, naturopathes.
 
-Voir [`vela-brand-book.md`](vela-brand-book.md) pour l'identité de marque complète.
+[▶ Voir l'application en ligne](https://velaconsult.vercel.app) · [Brand book](docs/brand/vela-brand-book.md) · [Étude de cas sur mon portfolio](https://gaumsportfolio.vercel.app)
+
+![Tableau de bord praticien](docs/screenshots/dashboard.png)
+
+## Le problème
+
+Les praticiens indépendants gèrent des données de santé très sensibles avec des outils qui ne sont pas faits pour ça : carnets papier, Google Docs, tableurs. Les logiciels médicaux existants sont pensés pour des médecins, sont chargés et anxiogènes. Vela leur offre un espace sobre et rassurant, avec le niveau d'exigence que demandent des données patients (RGPD/HDS).
+
+## Ce que j'ai fait
+
+Projet freelance, de la discovery à la mise en production.
+
+- **Design** : identité de marque, design system sur tokens (Tailwind v4 + shadcn/ui), parcours d'onboarding, fiches patient, modèles de consultation, historique de versions.
+- **Développement** : application full-stack Next.js (App Router) en TypeScript strict, PostgreSQL sans ORM, migrations SQL versionnées, emails transactionnels.
+- **Qualité** : tests unitaires et tests d'intégration des routes API sur une vraie base Postgres, CI GitHub Actions sur chaque PR, travail par pull requests.
+
+![Consultation et fiche patient](docs/screenshots/consultation-fiche-patient.png)
+
+## Décisions techniques
+
+| Décision | Pourquoi |
+|---|---|
+| SQL paramétré, sans ORM | Contrôle total sur chaque requête qui touche des données de santé |
+| Toutes les requêtes scopées par `practitioner_id` | Un praticien ne peut jamais lire les patients d'un autre, et c'est vérifié par les tests d'intégration |
+| Tests d'intégration sur un Postgres réel (Docker) | Les erreurs de schéma et de migration remontent en CI, pas en production |
+| Rendu serveur privilégié, pas d'animation décorative | Sobriété et performance, cohérentes avec la marque |
 
 ## Stack technique
 
@@ -70,7 +95,7 @@ Documentation détaillée dans le dossier [`claude/`](claude) :
 ## Structure du projet
 
 ```
-soin-app/
+vela/
  ├── claude/                # Documentation détaillée du projet
  ├── src/
  │   ├── app/                # Routes (App Router) : pages, layouts, API
@@ -82,9 +107,11 @@ soin-app/
  │   │   └── ui/             # Composants UI réutilisables (shadcn/ui)
  │   ├── lib/                # Logique serveur : auth, DB, schéma SQL, migrations
  │   └── types/               # Déclarations de types partagées
- ├── public/                  # Assets statiques
- ├── vela-brand-book.md       # Identité de marque complète
- └── vela-moodboard.html      # Moodboard visuel de la marque
+ ├── tests/integration/       # Tests API contre un vrai Postgres
+ ├── docs/
+ │   ├── brand/               # Brand book + moodboard
+ │   └── screenshots/         # Captures d'écran
+ └── public/                  # Assets statiques
 ```
 
 ## Points d'attention

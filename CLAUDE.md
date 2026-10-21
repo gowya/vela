@@ -1,6 +1,6 @@
 # Project Overview
 
-Vela (soin-app) est un outil de suivi patient destiné aux praticiens de l'accompagnement humain (psychologues, sexologues, hypnothérapeutes, coachs relationnels, sophrologues, naturopathes). L'application permet la gestion de patientèle, l'authentification des praticiens et le suivi de consultations, avec une exigence forte de discrétion, de rigueur (RGPD/HDS) et de sobriété visuelle. Voir `vela-brand-book.md` pour l'identité de marque complète.
+Vela (soin-app) est un outil de suivi patient destiné aux praticiens de l'accompagnement humain (psychologues, sexologues, hypnothérapeutes, coachs relationnels, sophrologues, naturopathes). L'application permet la gestion de patientèle, l'authentification des praticiens et le suivi de consultations, avec une exigence forte de discrétion, de rigueur (RGPD/HDS) et de sobriété visuelle. Voir `docs/brand/vela-brand-book.md` pour l'identité de marque complète.
 
 # Architecture
 
@@ -53,8 +53,7 @@ soin-app/
  ├── tests/
  │   └── integration/        # Tests des routes API contre un vrai Postgres de test
  ├── public/                 # Assets statiques (logo, images)
- ├── vela-brand-book.md      # Identité de marque complète
- └── vela-moodboard.html     # Moodboard visuel de la marque
+ └── docs/brand/             # Brand book + moodboard
 ```
 
 # Commands

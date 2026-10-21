@@ -16,7 +16,7 @@
 ## Style et UI
 
 - Ne pas utiliser de valeurs de couleur arbitraires (`bg-[#f4f2ef]`) dans les composants applicatifs : utiliser les tokens sémantiques shadcn définis dans `src/app/globals.css` (`bg-primary`, `bg-background`, `text-muted-foreground`, etc.). Voir `ui_guidelines.md`.
-- Pas de point d'exclamation, pas d'emoji, pas de ton publicitaire dans les textes affichés à l'utilisateur (cohérence avec l'identité verbale de la marque, voir `vela-brand-book.md`).
+- Pas de point d'exclamation, pas d'emoji, pas de ton publicitaire dans les textes affichés à l'utilisateur (cohérence avec l'identité verbale de la marque, voir `docs/brand/vela-brand-book.md`).
 - Les messages d'erreur doivent expliquer ce qui s'est passé sans excès d'excuses ("La note n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez." plutôt que "Oups ! Une erreur est survenue 😅").
 
 ## Organisation du code

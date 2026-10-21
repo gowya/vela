@@ -1,6 +1,6 @@
 # UI Guidelines
 
-Référence complète : `vela-brand-book.md` et `vela-moodboard.html` (racine du projet). Ce fichier résume les règles applicables au code.
+Référence complète : `docs/brand/vela-brand-book.md` et `docs/brand/vela-moodboard.html`. Ce fichier résume les règles applicables au code.
 
 ## Palette
 
