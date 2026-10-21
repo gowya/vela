@@ -13,6 +13,7 @@ vi.mock("next-auth", async (importOriginal) => {
 vi.mock("@/lib/email", () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendAccountDeletionEmail: vi.fn().mockResolvedValue(undefined),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 // practitioners entraîne en cascade (ON DELETE CASCADE, voir src/lib/schema.sql)

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -62,9 +63,17 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password" className={authLabelClassName}>
-          Mot de passe
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password" className={authLabelClassName}>
+            Mot de passe
+          </Label>
+          <Link
+            href="/forgot-password"
+            className="rounded-sm text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/30"
+          >
+            Mot de passe oublié ?
+          </Link>
+        </div>
         <PasswordInput
           id="password"
           autoComplete="current-password"
