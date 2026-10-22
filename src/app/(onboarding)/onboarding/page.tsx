@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/ui/Logo";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { signOut } from "next-auth/react";
+import { AuthShell, authFieldClassName, authFooterLinkClassName } from "@/components/AuthShell";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ComboboxMultiple } from "@/components/ui/combobox";
@@ -53,63 +53,67 @@ export default function OnboardingPage() {
   }
 
   return (
-    <Card className="w-full max-w-[463px]">
-      <CardContent className="flex flex-col items-center gap-8 px-14 py-12">
-        <Logo size={64} />
-
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Bienvenue sur Vela
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Quelques informations pour personnaliser votre espace.
-          </p>
+    <AuthShell
+      title="Bienvenue sur Vela"
+      description="Quelques informations pour personnaliser votre espace."
+      footer={
+        <>
+          Pas le bon compte ?{" "}
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className={authFooterLinkClassName}
+          >
+            Se déconnecter
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
+          <Field>
+            <FieldLabel htmlFor="firstName">Prénom</FieldLabel>
+            <Input
+              id="firstName"
+              autoComplete="given-name"
+              required
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              className={authFieldClassName}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="lastName">Nom</FieldLabel>
+            <Input
+              id="lastName"
+              autoComplete="family-name"
+              required
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              className={authFieldClassName}
+            />
+          </Field>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
-          <div className="flex gap-3">
-            <div className="w-full">
-              <Label htmlFor="firstName" className="mb-1">
-                Prénom
-              </Label>
-              <Input
-                id="firstName"
-                required
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-              />
-            </div>
-            <div className="w-full">
-              <Label htmlFor="lastName" className="mb-1">
-                Nom
-              </Label>
-              <Input
-                id="lastName"
-                required
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-              />
-            </div>
-          </div>
+        <ComboboxMultiple
+          id="specialties"
+          label="Spécialités"
+          options={SPECIALTIES}
+          value={specialties}
+          onValueChange={(values) => {
+            setSpecialties(values as SpecialtyValue[]);
+            setError(null);
+          }}
+          placeholder="Sélectionnez vos spécialités"
+          className="min-h-9"
+        />
 
-          <div className="w-full">
-            <ComboboxMultiple
-              id="specialties"
-              label="Spécialités"
-              options={SPECIALTIES}
-              value={specialties}
-              onValueChange={(values) => setSpecialties(values as SpecialtyValue[])}
-              placeholder="Sélectionnez vos spécialités"
-            />
-          </div>
+        <FieldError>{error}</FieldError>
 
-          {error && <p className="w-full text-sm text-destructive">{error}</p>}
-
-          <Button type="submit" size="lg" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Enregistrement..." : "Continuer"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
+          {isSubmitting ? "Enregistrement…" : "Continuer"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

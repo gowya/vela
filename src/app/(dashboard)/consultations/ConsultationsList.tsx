@@ -36,6 +36,8 @@ import {
 import { NewConsultationDialog } from "./NewConsultationDialog";
 import { TemplatesManagerDialog } from "./TemplatesManagerDialog";
 import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
+import { PageShell } from "@/components/PageShell";
+import { FieldError } from "@/components/ui/field";
 
 function formatDate(value: Date | string): string {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -259,7 +261,7 @@ export function ConsultationsList() {
   const isEmpty = consultations?.length === 0;
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
+    <PageShell>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Consultations</h1>
         <div className="flex items-center gap-2">
@@ -306,7 +308,7 @@ export function ConsultationsList() {
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       {consultations === null && !error && (
         <div className="flex flex-col gap-2">
@@ -452,6 +454,6 @@ export function ConsultationsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </PageShell>
   );
 }

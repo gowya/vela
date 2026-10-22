@@ -58,6 +58,7 @@ import {
   XIcon,
   type Icon,
 } from "@phosphor-icons/react";
+import { FieldError } from "@/components/ui/field";
 
 interface PatientDetailField {
   fieldDefinitionId: string;
@@ -700,7 +701,7 @@ export function PatientDetailDrawer({
           )}
         </div>
 
-        {error && !form && <p className="p-4 text-sm text-destructive">{error}</p>}
+        {!form && <FieldError className="p-4">{error}</FieldError>}
         {!patient && !error && (
           <div className="flex flex-1 flex-col gap-5 overflow-hidden p-4">
             <div className="flex flex-col gap-3">
@@ -1049,7 +1050,7 @@ export function PatientDetailDrawer({
                 )}
               </div>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <FieldError>{error}</FieldError>
             </div>
           </form>
         )}

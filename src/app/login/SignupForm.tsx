@@ -5,12 +5,13 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { PasswordInput } from "./PasswordInput";
-import { authButtonClassName, authFieldClassName, authLabelClassName } from "./styles";
+import { PasswordInput } from "@/components/ui/password-input";
+import { authFieldClassName } from "@/components/AuthShell";
 
 export function SignupForm() {
   const router = useRouter();
@@ -76,10 +77,8 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="signup-email" className={authLabelClassName}>
-          Email
-        </Label>
+      <Field>
+        <FieldLabel htmlFor="signup-email">Email</FieldLabel>
         <Input
           id="signup-email"
           type="email"
@@ -89,13 +88,11 @@ export function SignupForm() {
           onChange={(event) => setEmail(event.target.value)}
           className={authFieldClassName}
         />
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1.5">
+      <Field>
         <div className="flex items-center justify-between">
-          <Label htmlFor="signup-password" className={authLabelClassName}>
-            Mot de passe
-          </Label>
+          <FieldLabel htmlFor="signup-password">Mot de passe</FieldLabel>
           {passwordStrength && (
             <span
               aria-label={`Force du mot de passe : ${passwordStrength}`}
@@ -120,13 +117,13 @@ export function SignupForm() {
           aria-describedby="signup-password-hint"
           className={authFieldClassName}
         />
-        <p
+        <FieldDescription
           id="signup-password-hint"
-          className={passwordError ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+          className={passwordError ? "text-destructive" : undefined}
         >
           {passwordError ?? "8 caractères minimum."}
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
 
       <div className="flex items-start gap-2">
         <Checkbox
@@ -162,13 +159,9 @@ export function SignupForm() {
         </Label>
       </div>
 
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FieldError>{error}</FieldError>
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className={authButtonClassName}>
+      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
         {isSubmitting ? "Création…" : "Créer mon compte"}
       </Button>
     </form>

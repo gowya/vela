@@ -3,11 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "./PasswordInput";
-import { authButtonClassName, authFieldClassName, authLabelClassName } from "./styles";
+import { PasswordInput } from "@/components/ui/password-input";
+import { authFieldClassName } from "@/components/AuthShell";
 
 export function LoginForm() {
   const router = useRouter();
@@ -42,10 +42,8 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="email" className={authLabelClassName}>
-          Email
-        </Label>
+      <Field>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
         <Input
           id="email"
           type="email"
@@ -59,12 +57,10 @@ export function LoginForm() {
           aria-invalid={error ? true : undefined}
           className={authFieldClassName}
         />
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password" className={authLabelClassName}>
-          Mot de passe
-        </Label>
+      <Field>
+        <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
         <PasswordInput
           id="password"
           autoComplete="current-password"
@@ -77,15 +73,11 @@ export function LoginForm() {
           aria-invalid={error ? true : undefined}
           className={authFieldClassName}
         />
-      </div>
+      </Field>
 
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FieldError>{error}</FieldError>
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className={authButtonClassName}>
+      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
         {isSubmitting ? "Connexion…" : "Se connecter"}
       </Button>
     </form>

@@ -55,7 +55,7 @@ function DatePicker({
   const selected = parseDateOnly(value)
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <Label htmlFor={inputId} className={hideLabel ? "sr-only" : undefined}>
         {label}
       </Label>
@@ -136,7 +136,7 @@ function DateTimePicker({
   const { date: selected, time } = parseDateTimeLocal(value)
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <Label htmlFor={inputId} className={hideLabel ? "sr-only" : undefined}>
         {label}
       </Label>
@@ -186,7 +186,7 @@ function DateTimePicker({
             <Input
               id={`${inputId}-time`}
               type="time"
-              className="h-7 w-auto"
+              className="w-auto"
               value={time}
               onChange={(event) => {
                 const base = selected ?? new Date()

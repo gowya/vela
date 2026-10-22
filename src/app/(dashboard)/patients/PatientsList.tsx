@@ -90,6 +90,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AddPatientDialog } from "./AddPatientDialog";
 import { PatientDetailDrawer } from "./PatientDetailDrawer";
+import { PageShell } from "@/components/PageShell";
+import { FieldError } from "@/components/ui/field";
 
 function formatDate(value: Date | string | null): string {
   if (!value) return "—";
@@ -715,7 +717,7 @@ export function PatientsList() {
   const otherHeaders = headerGroup?.headers.filter((header) => header.column.id !== "name") ?? [];
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
+    <PageShell>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold text-foreground">Patients</h1>
@@ -765,7 +767,7 @@ export function PatientsList() {
         />
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       {patients === null && !error && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -957,6 +959,6 @@ export function PatientsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </PageShell>
   );
 }

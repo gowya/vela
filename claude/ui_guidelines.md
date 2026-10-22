@@ -18,12 +18,20 @@ Polices chargées via `next/font/google` dans `src/app/layout.tsx`, exposées en
 
 ## Composants (`src/components/ui`)
 
-Tous les composants sont générés par la CLI `shadcn` (basés sur `@base-ui/react` + `class-variance-authority`), à l'exception de `Logo` qui est spécifique à l'app :
+Tous les composants sont générés par la CLI `shadcn` (basés sur `@base-ui/react` + `class-variance-authority`), à l'exception de `Logo` et `password-input` qui sont spécifiques à l'app :
 
-- `Logo` (`Logo.tsx`, PascalCase — seul composant non-shadcn) : affiche le logo Vela (`public/vela-logo.png`), avec option `withWordmark` pour ajouter "vela" en Fraunces minuscule.
-- `button.tsx` : variantes `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`. Tailles `default`, `xs`, `sm`, `lg`, `icon*`. Compact par défaut (h-7), sans largeur imposée — ajouter `w-full` pour un CTA pleine largeur.
+- `Logo` (`Logo.tsx`, PascalCase) : affiche le logo Vela, version vin en clair et sable en sombre.
+- `button.tsx` : variantes `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`. Tailles `default` (h-8, text-sm), `lg` (h-9, écrans hors app), `sm` et `xs` (compactes, pour les tableaux, barres d'outils et menus), `icon*`. Sans largeur imposée — ajouter `w-full` pour un CTA pleine largeur.
 - `card.tsx` : `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter`. Le padding interne est géré via une variable CSS (`--card-spacing`, syntaxe fonction Tailwind v4 `px-(--card-spacing)`) — fonctionne nativement, pas besoin de repasser du padding explicite en `className` sauf pour ajuster ponctuellement une mise en page.
-- `input.tsx`, `label.tsx` : à composer ensemble (`<Label htmlFor="x">` + `<Input id="x">`), pas de prop `label` intégrée.
+- `input.tsx`, `select.tsx`, `textarea.tsx`, `combobox.tsx` : champs en h-8 / text-sm par défaut.
+- `field.tsx` (sous-ensemble du `field` shadcn) : `Field` + `FieldLabel` + champ + `FieldDescription` (aide) pour chaque champ de formulaire, `FieldGroup` pour empiler des champs. `FieldError` pour toute erreur : elle est annoncée aux lecteurs d'écran (`role="alert"`) et ne rend rien sans contenu (`<FieldError>{error}</FieldError>`). Pas de `<p className="text-destructive">` à la main. Sur un champ en erreur, poser aussi `aria-invalid`.
+- `alert.tsx` (`alert` shadcn) : messages en encadré (session expirée, confirmation…). Variantes `default`, `destructive`, `success` (sauge).
+- `password-input.tsx` : champ mot de passe avec bouton afficher / masquer, à utiliser pour tout mot de passe.
+
+Composants de mise en page (dans `src/components/`) :
+
+- `PageShell` : conteneur de chaque page de l'app (marges qui suivent la largeur d'écran, rythme vertical). Ne pas recréer de `<main className="px-16 …">`.
+- `AuthShell` : gabarit des écrans hors de l'app (connexion, onboarding, compte supprimé, 404, erreur) — logo hors de la carte, carte resserrée, titre court aligné à gauche, liens légaux. Ces écrans utilisent `authFieldClassName` (h-9) et des boutons `size="lg"`.
 
 Toute nouvelle interface doit composer avec ces éléments avant d'en créer de nouveaux. Ne pas dupliquer un composant déjà généré par shadcn — utiliser `npx shadcn add <composant>` pour en ajouter d'autres.
 

@@ -23,7 +23,7 @@ export function ResendVerificationButton({ className }: { className?: string }) 
       disabled={status === "sending"}
       className={cn("underline underline-offset-2 hover:opacity-70", className)}
     >
-      {status === "sending" ? "Envoi..." : "Renvoyer l'email"}
+      {status === "sending" ? "Envoi…" : "Renvoyer l'email"}
     </button>
   );
 }

@@ -7,6 +7,7 @@ import { sendWelcomeEmail } from "@/lib/email";
 import { Card, CardContent } from "@/components/ui/card";
 import { DashboardQuickActions } from "./DashboardQuickActions";
 import { CalendarCheckIcon, ClipboardTextIcon, ClockIcon } from "@phosphor-icons/react/dist/ssr";
+import { PageShell } from "@/components/PageShell";
 
 interface RecentConsultation {
   id: string;
@@ -258,7 +259,7 @@ export default async function Home({
   );
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-8 px-16 py-8">
+    <PageShell className="gap-8">
       <header className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground [&::first-letter]:uppercase">
           {today}, {currentTime}
@@ -444,6 +445,6 @@ export default async function Home({
           )}
         </section>
       )}
-    </main>
+    </PageShell>
   );
 }

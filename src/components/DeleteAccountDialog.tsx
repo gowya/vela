@@ -4,8 +4,7 @@ import { useState, type FormEvent } from "react";
 import { signOut } from "next-auth/react";
 import { DownloadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
@@ -22,6 +21,7 @@ import {
   ACCOUNT_DELETION_REASON_LABELS,
   type AccountDeletionReason,
 } from "@/lib/accountDeletionReasons";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 
 function pluralize(count: number, word: string) {
   return `${count} ${word}${count > 1 ? "s" : ""}`;
@@ -120,13 +120,12 @@ export function DeleteAccountDialog({
             />
           </div>
 
-          <div>
-            <Label htmlFor="delete-account-password" className="mb-1">
+          <Field>
+            <FieldLabel htmlFor="delete-account-password">
               Confirmez avec votre mot de passe
-            </Label>
-            <Input
+            </FieldLabel>
+            <PasswordInput
               id="delete-account-password"
-              type="password"
               autoComplete="current-password"
               value={password}
               onChange={(event) => {
@@ -135,9 +134,9 @@ export function DeleteAccountDialog({
               }}
               required
             />
-          </div>
+          </Field>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          <FieldError>{error}</FieldError>
 
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>
@@ -148,7 +147,7 @@ export function DeleteAccountDialog({
               variant="destructive"
               disabled={isSubmitting || password.trim().length === 0 || reason === ""}
             >
-              {isSubmitting ? "Suppression..." : "Supprimer définitivement"}
+              {isSubmitting ? "Suppression…" : "Supprimer définitivement"}
             </Button>
           </DialogFooter>
         </form>

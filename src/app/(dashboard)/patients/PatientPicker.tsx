@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Patient } from "@/types";
 import { Combobox } from "@/components/ui/combobox";
 import { AddPatientDialog } from "./AddPatientDialog";
+import { FieldError } from "@/components/ui/field";
 
 interface PatientPickerProps {
   value: string;
@@ -46,7 +47,7 @@ export function PatientPicker({ value, onValueChange, error }: PatientPickerProp
         }}
       />
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
     </div>
   );
 }
