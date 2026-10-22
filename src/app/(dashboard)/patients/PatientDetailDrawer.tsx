@@ -658,7 +658,7 @@ export function PatientDetailDrawer({
 
   const panelContent = (
     <>
-        <div className="flex flex-row items-center justify-between gap-3 border-b border-border p-4">
+        <div className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border p-4">
           <div className="flex min-w-0 flex-col gap-1">
             <h2 className="truncate font-heading text-sm font-medium text-foreground">
               {patient ? `${patient.firstName} ${patient.lastName}` : "Patient"}
@@ -669,17 +669,17 @@ export function PatientDetailDrawer({
           </div>
           {patient && form && (
             <div className="flex shrink-0 items-center gap-2">
-              {variant === "inline" && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Fermer"
-                  onClick={requestClose}
-                >
-                  <XIcon size={16} />
-                </Button>
-              )}
+              {/* Toujours visible : sur mobile le panneau couvre tout
+                  l'écran, il n'y a pas de fond sur lequel cliquer pour fermer. */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Fermer"
+                onClick={requestClose}
+              >
+                <XIcon size={16} />
+              </Button>
               <Button
                 type="button"
                 variant="ghost"
@@ -706,11 +706,11 @@ export function PatientDetailDrawer({
           <div className="flex flex-1 flex-col gap-5 overflow-hidden p-4">
             <div className="flex flex-col gap-3">
               <Skeleton className="h-3 w-20" />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Skeleton className="h-7" />
                 <Skeleton className="h-7" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Skeleton className="h-7" />
                 <Skeleton className="h-7" />
               </div>
@@ -732,7 +732,7 @@ export function PatientDetailDrawer({
             <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4 text-sm">
               <div className="flex flex-col gap-3">
                 <SectionHeader icon={UserIcon} label="Identité" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="edit-firstName">Prénom</Label>
                     <Input
@@ -752,7 +752,7 @@ export function PatientDetailDrawer({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <DatePicker
                       id="edit-birthDate"
@@ -828,7 +828,7 @@ export function PatientDetailDrawer({
 
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <SectionHeader icon={AddressBookIcon} label="Contact" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="edit-email">Email</Label>
                     <Input
@@ -859,7 +859,7 @@ export function PatientDetailDrawer({
 
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <SectionHeader icon={NotebookIcon} label="Suivi" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="edit-identifiedIssue">Problématique identifiée</Label>
                     <Input
@@ -882,7 +882,7 @@ export function PatientDetailDrawer({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label>Dernier rendez-vous</Label>
                     <p className="flex h-7 items-center text-muted-foreground">
@@ -923,7 +923,7 @@ export function PatientDetailDrawer({
                       items={customFieldDefinitions.map((definition) => definition.id)}
                       strategy={rectSortingStrategy}
                     >
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {customFieldDefinitions.map((definition) => (
                           <SortableCustomField
                             key={definition.id}

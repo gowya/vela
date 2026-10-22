@@ -6,7 +6,7 @@ export function PageShell({ className, ...props }: React.ComponentProps<"main">)
   return (
     <main
       className={cn(
-        "flex min-h-screen min-w-0 flex-col gap-6 px-4 py-6 sm:px-8 lg:px-16 lg:py-8",
+        "flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:px-8 lg:px-16 lg:py-8",
         className
       )}
       {...props}

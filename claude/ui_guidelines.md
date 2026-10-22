@@ -30,7 +30,13 @@ Tous les composants sont générés par la CLI `shadcn` (basés sur `@base-ui/re
 
 Composants de mise en page (dans `src/components/`) :
 
-- `PageShell` : conteneur de chaque page de l'app (marges qui suivent la largeur d'écran, rythme vertical). Ne pas recréer de `<main className="px-16 …">`.
+- `PageShell` : conteneur de chaque page de l'app (marges qui suivent la largeur d'écran, rythme vertical). C'est le seul `<main>` de la page (`SidebarInset` est une `<div>`). Ne pas recréer de `<main className="px-16 …">`.
+- `PageHeader` : titre de page + `meta` (compteur…) + `actions`, qui passent à la ligne sur mobile au lieu de déborder.
+- `AppSidebar` / `AppMobileHeader` : sous 768px la barre latérale est un panneau masqué ; `AppMobileHeader` (bouton menu + logo) est alors le seul accès à la navigation. Tout lien de la barre doit la refermer sur mobile (`closeOnMobile`).
+
+## Mobile
+
+Toute page doit rester utilisable à 375px de large : grilles de formulaire en `grid-cols-1 sm:grid-cols-2`, rangées titre + actions en `flex-wrap`, panneaux plein écran avec un bouton Fermer visible.
 - `AuthShell` : gabarit des écrans hors de l'app (connexion, onboarding, compte supprimé, 404, erreur) — logo hors de la carte, carte resserrée, titre court aligné à gauche, liens légaux. Ces écrans utilisent `authFieldClassName` (h-9) et des boutons `size="lg"`.
 
 Toute nouvelle interface doit composer avec ces éléments avant d'en créer de nouveaux. Ne pas dupliquer un composant déjà généré par shadcn — utiliser `npx shadcn add <composant>` pour en ajouter d'autres.

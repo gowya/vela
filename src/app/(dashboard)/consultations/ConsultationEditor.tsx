@@ -498,9 +498,9 @@ export function ConsultationEditor({
   const statusInfo = statusConfig[status];
 
   return (
-    <div className="flex min-h-screen min-w-0">
-    <PageShell className="min-h-0 flex-1">
-      <div className="flex items-center justify-between">
+    <div className="flex min-w-0 flex-1">
+    <PageShell>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={handleBack}
@@ -553,7 +553,7 @@ export function ConsultationEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Input
           placeholder="Titre de la consultation (optionnel)"
           value={title}
@@ -568,7 +568,7 @@ export function ConsultationEditor({
           value={date}
           onValueChange={setDate}
           disabled={loadFailed}
-          className="w-auto shrink-0"
+          className="w-full shrink-0 sm:w-auto"
         />
       </div>
 

@@ -55,6 +55,7 @@ import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
 import { ScheduleAppointmentDialog } from "./ScheduleAppointmentDialog";
 import { AppointmentsCalendar } from "./AppointmentsCalendar";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/PageHeader";
 import { FieldError } from "@/components/ui/field";
 
 function formatDate(value: Date | string): string {
@@ -154,10 +155,10 @@ export function AppointmentsList() {
 
   return (
     <PageShell>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Rendez-vous</h1>
-        <ScheduleAppointmentDialog onSaved={upsertLocal} />
-      </div>
+      <PageHeader
+        title="Rendez-vous"
+        actions={<ScheduleAppointmentDialog onSaved={upsertLocal} />}
+      />
 
       <FieldError>{error}</FieldError>
 

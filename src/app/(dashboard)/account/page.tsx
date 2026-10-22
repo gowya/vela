@@ -15,6 +15,7 @@ import { AppointmentTypesManager } from "@/components/AppointmentTypesManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SPECIALTIES } from "@/lib/specialties";
 import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/PageHeader";
 
 const ACCOUNT_TABS = [
   "profil",
@@ -54,14 +55,14 @@ export default async function AccountPage({
 
   return (
     <PageShell>
-      <h1 className="text-2xl font-semibold text-foreground">Compte</h1>
+      <PageHeader title="Compte" />
 
       {verification === "success" && (
         <p className="text-sm text-foreground">Adresse confirmée.</p>
       )}
 
       <Tabs defaultValue={defaultTab}>
-        <TabsList>
+        <TabsList className="max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="profil">Profil</TabsTrigger>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="billing">Facturation</TabsTrigger>
