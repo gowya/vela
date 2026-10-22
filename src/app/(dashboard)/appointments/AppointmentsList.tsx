@@ -54,6 +54,9 @@ import { cn } from "@/lib/utils";
 import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
 import { ScheduleAppointmentDialog } from "./ScheduleAppointmentDialog";
 import { AppointmentsCalendar } from "./AppointmentsCalendar";
+import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/PageHeader";
+import { FieldError } from "@/components/ui/field";
 
 function formatDate(value: Date | string): string {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -151,13 +154,13 @@ export function AppointmentsList() {
   const isEmpty = appointments?.length === 0;
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Rendez-vous</h1>
-        <ScheduleAppointmentDialog onSaved={upsertLocal} />
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Rendez-vous"
+        actions={<ScheduleAppointmentDialog onSaved={upsertLocal} />}
+      />
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       {appointments === null && !error && (
         <div className="flex flex-col gap-2">
@@ -398,6 +401,6 @@ export function AppointmentsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </PageShell>
   );
 }

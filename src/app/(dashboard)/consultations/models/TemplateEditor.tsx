@@ -20,6 +20,7 @@ import {
   TiptapEditor,
   type TiptapEditorHandle,
 } from "../editor/TiptapEditor";
+import { PageShell } from "@/components/PageShell";
 
 type SaveStatus = "idle" | "unnamed" | "saving" | "saved" | "error";
 
@@ -201,7 +202,7 @@ export function TemplateEditor({ templateId = null }: TemplateEditorProps) {
   const statusInfo = status === "idle" ? null : statusConfig[status];
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-4 px-16 py-8">
+    <PageShell className="gap-4">
       <div className="flex items-center justify-between">
         <Link
           href="/consultations"
@@ -254,6 +255,6 @@ export function TemplateEditor({ templateId = null }: TemplateEditorProps) {
           }
         />
       )}
-    </main>
+    </PageShell>
   );
 }

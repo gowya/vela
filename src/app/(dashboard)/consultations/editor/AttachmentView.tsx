@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { FieldError } from "@/components/ui/field";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`;
@@ -85,7 +86,7 @@ export function AttachmentView({ node, deleteNode, extension, selected }: ReactN
           <p className="text-[0.625rem] text-muted-foreground">
             {formatSize(sizeBytes)} · {mimeType}
           </p>
-          {error && <p className="text-[0.625rem] text-destructive">{error}</p>}
+          <FieldError className="text-[0.625rem]">{error}</FieldError>
         </div>
         <a
           href={url}

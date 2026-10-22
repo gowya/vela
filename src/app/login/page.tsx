@@ -2,11 +2,10 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { AuthLayout } from "./AuthLayout";
+import { Alert } from "@/components/ui/alert";
+import { AuthShell, authFooterLinkClassName } from "@/components/AuthShell";
 import { LoginForm } from "./LoginForm";
 import { SignupForm } from "./SignupForm";
-import { authFooterLinkClassName, authNoticeClassName } from "./styles";
 
 function VerificationNotice() {
   const searchParams = useSearchParams();
@@ -15,11 +14,7 @@ function VerificationNotice() {
   const reset = searchParams.get("reset");
 
   if (reset === "success") {
-    return (
-      <p role="status" className={cn(authNoticeClassName, "bg-muted/40 text-foreground")}>
-        Mot de passe modifié. Connectez-vous avec le nouveau.
-      </p>
-    );
+    return <Alert variant="success">Mot de passe modifié. Connectez-vous avec le nouveau.</Alert>;
   }
 
   const message =
@@ -31,14 +26,7 @@ function VerificationNotice() {
 
   if (!message) return null;
 
-  return (
-    <p
-      role="status"
-      className={cn(authNoticeClassName, "border-destructive/20 bg-destructive/5 text-destructive")}
-    >
-      {message}
-    </p>
-  );
+  return <Alert variant="destructive">{message}</Alert>;
 }
 
 export default function LoginPage() {
@@ -46,7 +34,7 @@ export default function LoginPage() {
   const isLogin = mode === "login";
 
   return (
-    <AuthLayout
+    <AuthShell
       title={isLogin ? "Connexion" : "Créer votre espace"}
       description={
         isLogin
@@ -71,6 +59,6 @@ export default function LoginPage() {
       </Suspense>
 
       {isLogin ? <LoginForm /> : <SignupForm />}
-    </AuthLayout>
+    </AuthShell>
   );
 }

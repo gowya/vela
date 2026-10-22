@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppMobileHeader, AppSidebar } from "@/components/AppSidebar";
 import { BetaNoticeDialog } from "@/components/BetaNoticeDialog";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -50,6 +50,7 @@ export default async function DashboardLayout({
     <SidebarProvider defaultOpen={sidebarOpen}>
       <AppSidebar userName={userName} />
       <SidebarInset>
+        <AppMobileHeader />
         {!profile.email_verified_at && <EmailVerificationBanner />}
         {children}
       </SidebarInset>

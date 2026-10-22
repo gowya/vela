@@ -3,19 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { toast } from "sonner";
 import {
   HouseIcon,
   UsersIcon,
   ClipboardTextIcon,
   CalendarCheckIcon,
   UserIcon,
-  CreditCardIcon,
-  BellIcon,
   ChatCircleTextIcon,
   SignOutIcon,
-  SparkleIcon,
 } from "@phosphor-icons/react";
+import { Logo } from "@/components/ui/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,14 +30,11 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 interface AppSidebarProps {
   userName: string;
-  // Vrai tant qu'aucune offre payante n'existe : tout le monde est "freemium"
-  // par défaut. À brancher sur le vrai statut d'abonnement une fois les
-  // offres payantes en place.
-  isFreemium?: boolean;
 }
 
 const navItems = [
@@ -56,12 +50,30 @@ function getInitials(name: string): string {
   return initials.join("") || "?";
 }
 
-export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
+// Les entrées Facturation, Notifications et « Passer à l'offre Pro » sont
+// retirées du menu tant que ces fonctionnalités n'existent pas : elles
+// menaient à des écrans vides ou à un simple « bientôt ».
+export function AppSidebar({ userName }: AppSidebarProps) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // Sur mobile la barre est un panneau par-dessus la page : on le referme
+  // dès qu'on choisit une destination.
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader className="flex-row items-center justify-center px-2 pt-1">
+      <SidebarHeader className="flex-row items-center justify-between gap-2 px-3 pt-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+        <Link
+          href="/"
+          onClick={closeOnMobile}
+          aria-label="Vela, tableau de bord"
+          className="flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/30 group-data-[collapsible=icon]:hidden"
+        >
+          <Logo size={44} />
+        </Link>
         <SidebarTrigger className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
       </SidebarHeader>
 
@@ -73,7 +85,11 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
             const isActive = href === "/" ? pathname === "/" : pathname?.startsWith(href);
             return (
               <SidebarMenuItem key={href}>
-                <SidebarMenuButton isActive={isActive} tooltip={label} render={<Link href={href} />}>
+                <SidebarMenuButton
+                  isActive={isActive}
+                  tooltip={label}
+                  render={<Link href={href} onClick={closeOnMobile} />}
+                >
                   <Icon size={18} weight={isActive ? "fill" : "regular"} />
                   <span>{label}</span>
                 </SidebarMenuButton>
@@ -96,38 +112,18 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
                 <span className="truncate">{userName}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="w-56">
-                {isFreemium && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => toast.info("Les abonnements arrivent bientôt.")}
-                    >
-                      <SparkleIcon size={14} />
-                      Passer à l&apos;offre Pro
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem render={<Link href="/account" />}>
+                <DropdownMenuItem render={<Link href="/account" onClick={closeOnMobile} />}>
                   <UserIcon size={14} />
                   Compte
                 </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/account?tab=billing" />}>
-                  <CreditCardIcon size={14} />
-                  Facturation
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/account?tab=notifications" />}>
-                  <BellIcon size={14} />
-                  Notifications
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/account?tab=feedback" />}>
+                <DropdownMenuItem
+                  render={<Link href="/account?tab=feedback" onClick={closeOnMobile} />}
+                >
                   <ChatCircleTextIcon size={14} />
                   Retours
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => signOut({ callbackUrl: "/login" })}
-                >
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
                   <SignOutIcon size={14} />
                   Se déconnecter
                 </DropdownMenuItem>
@@ -137,5 +133,22 @@ export function AppSidebar({ userName, isFreemium = true }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+// Sous 768px la barre latérale est masquée : cette barre en haut de page est
+// le seul accès à la navigation.
+export function AppMobileHeader() {
+  return (
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/95 px-2 backdrop-blur supports-backdrop-filter:bg-background/80 md:hidden">
+      <SidebarTrigger aria-label="Ouvrir le menu" className="size-10 text-foreground" />
+      <Link
+        href="/"
+        aria-label="Vela, tableau de bord"
+        className="flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+      >
+        <Logo size={40} />
+      </Link>
+    </header>
   );
 }

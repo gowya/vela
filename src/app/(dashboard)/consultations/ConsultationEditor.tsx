@@ -34,6 +34,8 @@ import {
   type TiptapEditorHandle,
 } from "./editor/TiptapEditor";
 import { ConsultationVersionHistory } from "./ConsultationVersionHistory";
+import { PageShell } from "@/components/PageShell";
+import { FieldError } from "@/components/ui/field";
 
 type SaveStatus = "idle" | "saving" | "saved" | "conflict" | "error";
 
@@ -496,9 +498,9 @@ export function ConsultationEditor({
   const statusInfo = statusConfig[status];
 
   return (
-    <div className="flex min-h-screen min-w-0">
-    <main className="flex min-w-0 flex-1 flex-col gap-6 px-16 py-8">
-      <div className="flex items-center justify-between">
+    <div className="flex min-w-0 flex-1">
+    <PageShell>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={handleBack}
@@ -551,7 +553,7 @@ export function ConsultationEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Input
           placeholder="Titre de la consultation (optionnel)"
           value={title}
@@ -566,11 +568,11 @@ export function ConsultationEditor({
           value={date}
           onValueChange={setDate}
           disabled={loadFailed}
-          className="w-auto shrink-0"
+          className="w-full shrink-0 sm:w-auto"
         />
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       {loadFailed ? (
         <div className="flex flex-col items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
@@ -655,7 +657,7 @@ export function ConsultationEditor({
               autoFocus
             />
             {saveAsTemplateError && (
-              <p className="text-sm text-destructive">{saveAsTemplateError}</p>
+              <FieldError>{saveAsTemplateError}</FieldError>
             )}
           </div>
           <DialogFooter>
@@ -695,7 +697,7 @@ export function ConsultationEditor({
           onRestored={handleVersionRestored}
         />
       )}
-    </main>
+    </PageShell>
 
     {showPatientPanel && (
       <aside className="sticky top-0 h-screen w-96 shrink-0 overflow-hidden">

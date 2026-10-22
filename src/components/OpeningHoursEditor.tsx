@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FieldError } from "@/components/ui/field";
 
 const DAYS: { key: OpeningHoursDayKey; label: string }[] = [
   { key: "mon", label: "Lundi" },
@@ -110,7 +111,7 @@ export function OpeningHoursEditor() {
         );
       })}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       <div className="flex items-center gap-3 pt-2">
         <Button type="button" size="sm" onClick={() => void handleSave()} disabled={isSaving}>

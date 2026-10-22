@@ -14,6 +14,8 @@ import { OpeningHoursEditor } from "@/components/OpeningHoursEditor";
 import { AppointmentTypesManager } from "@/components/AppointmentTypesManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SPECIALTIES } from "@/lib/specialties";
+import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/PageHeader";
 
 const ACCOUNT_TABS = [
   "profil",
@@ -52,15 +54,15 @@ export default async function AccountPage({
   const consultationsCount = Number(countRows[0]?.consultations_count ?? 0);
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
-      <h1 className="text-2xl font-semibold text-foreground">Compte</h1>
+    <PageShell>
+      <PageHeader title="Compte" />
 
       {verification === "success" && (
         <p className="text-sm text-foreground">Adresse confirmée.</p>
       )}
 
       <Tabs defaultValue={defaultTab}>
-        <TabsList>
+        <TabsList className="max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="profil">Profil</TabsTrigger>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="billing">Facturation</TabsTrigger>
@@ -193,7 +195,7 @@ export default async function AccountPage({
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                Les préférences de notifications (rappels de rendez-vous, résumés d&apos;activité...)
+                Les préférences de notifications (rappels de rendez-vous, résumés d&apos;activité…)
                 seront configurables ici prochainement.
               </CardDescription>
             </CardHeader>
@@ -275,6 +277,6 @@ export default async function AccountPage({
           </Card>
         </TabsContent>
       </Tabs>
-    </main>
+    </PageShell>
   );
 }

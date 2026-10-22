@@ -25,6 +25,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PatientPicker } from "@/app/(dashboard)/patients/PatientPicker";
 import { formatDuration } from "@/lib/duration";
+import { FieldError } from "@/components/ui/field";
 
 // Valeur du select réservée pour "pas de type, durée manuelle" — les ids de
 // type sont des UUID, cette chaîne ne peut jamais entrer en collision.
@@ -275,7 +276,7 @@ export function ScheduleAppointmentDialog({
             </div>
           )}
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          <FieldError>{error}</FieldError>
         </div>
 
         <DialogFooter>
