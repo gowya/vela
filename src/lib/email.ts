@@ -9,6 +9,9 @@ const TEMPLATE_IDS = {
   emailConfirmation: "email-confirmation",
   welcomeEmail: "welcome-email",
   accountDeletionConfirmation: "account-deletion-confirmation",
+  // Publié par `npm run resend:templates` (accolades triples, voir
+  // emails/4-password-reset.html).
+  passwordReset: "password-reset",
 } as const;
 
 export async function sendAccountDeletionEmail(
@@ -68,6 +71,31 @@ export async function sendVerificationEmail(to: string, token: string) {
     });
   } catch (err) {
     console.error("[email] échec envoi de vérification", err);
+  }
+}
+
+export async function sendPasswordResetEmail(to: string, token: string) {
+  const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    // Le SDK ne lève pas d'exception sur une erreur de l'API (template absent
+    // ou en draft, expéditeur non vérifié...) : il la renvoie dans `error`.
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      template: {
+        id: TEMPLATE_IDS.passwordReset,
+        variables: {
+          reset_url: resetUrl,
+        },
+      },
+    });
+    if (error) {
+      console.error("[email] échec envoi de réinitialisation du mot de passe", error);
+    }
+  } catch (err) {
+    console.error("[email] échec envoi de réinitialisation du mot de passe", err);
   }
 }
 

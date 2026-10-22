@@ -11,6 +11,11 @@ function VerificationNotice() {
   const searchParams = useSearchParams();
   const verification = searchParams.get("verification");
   const session = searchParams.get("session");
+  const reset = searchParams.get("reset");
+
+  if (reset === "success") {
+    return <Alert variant="success">Mot de passe modifié. Connectez-vous avec le nouveau.</Alert>;
+  }
 
   const message =
     session === "expired"

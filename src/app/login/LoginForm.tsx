@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,15 @@ export function LoginForm() {
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+        <div className="flex items-center justify-between">
+          <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
+          <Link
+            href="/forgot-password"
+            className="rounded-sm text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/30"
+          >
+            Mot de passe oublié ?
+          </Link>
+        </div>
         <PasswordInput
           id="password"
           autoComplete="current-password"
