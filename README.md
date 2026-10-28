@@ -2,7 +2,7 @@
 
 **Suivi patient pour les praticiens de l'accompagnement** — psychologues, sexologues, hypnothérapeutes, coachs, sophrologues, naturopathes.
 
-[▶ Voir l'application en ligne](https://velaconsult.vercel.app) · [Brand book](docs/brand/vela-brand-book.md) · [Étude de cas sur mon portfolio](https://gaumsportfolio.vercel.app)
+[▶ Essayer la démo (sans compte)](https://velaconsult.vercel.app/demo) · [Brand book](docs/brand/vela-brand-book.md) · [Étude de cas sur mon portfolio](https://gaumsportfolio.vercel.app)
 
 ![Tableau de bord praticien](docs/screenshots/dashboard.png)
 
