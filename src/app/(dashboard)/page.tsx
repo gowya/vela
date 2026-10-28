@@ -177,8 +177,18 @@ async function getRecentConsultations(practitionerId: string): Promise<RecentCon
   }));
 }
 
+// Cette page est rendue côté serveur, dont le fuseau (UTC sur Vercel) n'est pas
+// celui du praticien : sans fuseau explicite, toutes les heures s'affichaient
+// avec une heure de décalage (deux en été). Même fuseau que les requêtes SQL
+// qui découpent « aujourd'hui » et « cette semaine ».
+const DISPLAY_TIME_ZONE = "Europe/Paris";
+
 function formatTime(value: Date): string {
-  return new Date(value).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: DISPLAY_TIME_ZONE,
+  });
 }
 
 function formatDayLabel(value: Date): string {
@@ -186,6 +196,7 @@ function formatDayLabel(value: Date): string {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: DISPLAY_TIME_ZONE,
   });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -195,7 +206,7 @@ function groupByDay(appointments: TodayAppointment[]): { dayKey: string; date: D
 
   for (const appointment of appointments) {
     const date = new Date(appointment.scheduledAt);
-    const dayKey = date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+    const dayKey = date.toLocaleDateString("fr-FR", { timeZone: DISPLAY_TIME_ZONE });
     const group = groups.get(dayKey);
     if (group) {
       group.items.push(appointment);
@@ -241,8 +252,13 @@ export default async function Home({
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: DISPLAY_TIME_ZONE,
   });
-  const currentTime = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const currentTime = now.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: DISPLAY_TIME_ZONE,
+  });
 
   const hasNoPatients = activationState.patientCount === 0;
   const hasNoConsultations = Boolean(
@@ -435,7 +451,7 @@ export default async function Home({
                         </span>
                       </p>
                       <span className="shrink-0 text-sm text-muted-foreground">
-                        {new Date(consultation.date).toLocaleDateString("fr-FR")}
+                        {new Date(consultation.date).toLocaleDateString("fr-FR", { timeZone: DISPLAY_TIME_ZONE })}
                       </span>
                     </CardContent>
                   </Card>
