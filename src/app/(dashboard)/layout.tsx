@@ -4,9 +4,11 @@ import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { AppMobileHeader, AppSidebar } from "@/components/AppSidebar";
 import { BetaNoticeDialog } from "@/components/BetaNoticeDialog";
+import { DemoBanner } from "@/components/DemoBanner";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import pool from "@/lib/db";
+import { isDemoEmail } from "@/lib/demo";
 import { requirePractitionerRow } from "@/lib/requirePractitionerRow";
 
 export default async function DashboardLayout({
@@ -51,6 +53,7 @@ export default async function DashboardLayout({
       <AppSidebar userName={userName} />
       <SidebarInset>
         <AppMobileHeader />
+        {isDemoEmail(session.user.email) && <DemoBanner />}
         {!profile.email_verified_at && <EmailVerificationBanner />}
         {children}
       </SidebarInset>
