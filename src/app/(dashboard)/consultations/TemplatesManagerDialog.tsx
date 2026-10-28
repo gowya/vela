@@ -23,6 +23,7 @@ import {
 import { Combobox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FieldError } from "@/components/ui/field";
 
 export function TemplatesManagerDialog() {
   const router = useRouter();
@@ -206,7 +207,7 @@ export function TemplatesManagerDialog() {
               placeholder="Choisir un patient"
             />
 
-            {pickError && <p className="text-sm text-destructive">{pickError}</p>}
+            <FieldError>{pickError}</FieldError>
           </div>
 
           <DialogFooter>

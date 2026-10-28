@@ -33,7 +33,7 @@ export function BetaNoticeDialog({ initialOpen }: { initialOpen: boolean }) {
           <DialogDescription>
             L&apos;application est gratuite pendant cette phase et continue d&apos;évoluer. Vos
             retours nous aident à l&apos;ajuster au plus près de votre pratique. Vous pouvez les
-            partager depuis l&apos;onglet Feedback de votre fiche compte.
+            partager depuis l&apos;onglet Retours de votre compte.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 
 interface ConfirmedFeedback {
   message: string;
@@ -43,10 +43,8 @@ export function FeedbackForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <div>
-        <Label htmlFor="feedback-message" className="mb-1">
-          Votre retour
-        </Label>
+      <Field>
+        <FieldLabel htmlFor="feedback-message">Votre retour</FieldLabel>
         <Textarea
           id="feedback-message"
           value={message}
@@ -57,9 +55,9 @@ export function FeedbackForm() {
           placeholder="Ce qui fonctionne, ce qui manque, ce qui vous ferait gagner du temps."
           className="min-h-32"
         />
-      </div>
+      </Field>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
       {confirmedFeedback && (
         <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
           <p className="font-medium text-foreground">
@@ -74,7 +72,7 @@ export function FeedbackForm() {
       )}
 
       <Button type="submit" disabled={isSubmitting || message.trim().length === 0} className="self-start">
-        {isSubmitting ? "Envoi..." : "Envoyer"}
+        {isSubmitting ? "Envoi…" : "Envoyer"}
       </Button>
     </form>
   );
