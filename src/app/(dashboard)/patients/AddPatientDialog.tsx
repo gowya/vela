@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 
 interface PatientFormState {
   firstName: string;
@@ -107,49 +107,53 @@ export function AddPatientDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="firstName">Prénom</Label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="firstName">Prénom</FieldLabel>
               <Input
                 id="firstName"
                 required
                 value={form.firstName}
                 onChange={(event) => updateField("firstName", event.target.value)}
               />
-            </div>
-            <div>
-              <Label htmlFor="lastName">Nom</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="lastName">Nom</FieldLabel>
               <Input
                 id="lastName"
                 required
                 value={form.lastName}
                 onChange={(event) => updateField("lastName", event.target.value)}
               />
-            </div>
+            </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="email">Email</Label>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
                 type="email"
+                autoComplete="off"
                 value={form.email}
                 onChange={(event) => updateField("email", event.target.value)}
               />
-            </div>
-            <div>
-              <Label htmlFor="phone">Téléphone</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="phone">Téléphone</FieldLabel>
               <Input
                 id="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
                 value={form.phone}
                 onChange={(event) => updateField("phone", event.target.value)}
               />
-            </div>
+            </Field>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          <FieldError>{error}</FieldError>
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

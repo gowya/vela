@@ -26,7 +26,7 @@ function ComboboxPopup({
   return (
     <ComboboxPrimitive.Portal>
       <ComboboxPrimitive.Positioner className="isolate z-50" sideOffset={4}>
-        <ComboboxPrimitive.Popup className="max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
+        <ComboboxPrimitive.Popup className="max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
           <ComboboxPrimitive.Empty className="empty:hidden px-2 py-1.5 text-muted-foreground">
             {emptyMessage}
           </ComboboxPrimitive.Empty>
@@ -35,7 +35,7 @@ function ComboboxPopup({
               <ComboboxPrimitive.Item
                 key={option.value}
                 value={option}
-                className="relative flex min-h-7 w-full cursor-default items-center gap-2 rounded-md px-2 py-1 pr-7 text-xs/relaxed outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+                className="relative flex min-h-7 w-full cursor-default items-center gap-2 rounded-md px-2 py-1 pr-7 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground"
               >
                 <ComboboxPrimitive.ItemIndicator className="absolute right-2 flex items-center justify-center">
                   <CheckIcon size={13} weight="bold" />
@@ -80,7 +80,7 @@ function Combobox({
   const selected = options.find((option) => option.value === value) ?? null
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <Label htmlFor={inputId} className={hideLabel ? "sr-only" : undefined}>
         {label}
       </Label>
@@ -93,14 +93,14 @@ function Combobox({
       >
         <ComboboxPrimitive.InputGroup
           className={cn(
-            "flex h-7 w-full items-center gap-1 rounded-md border border-input bg-input/20 pl-2 text-xs/relaxed transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30",
+            "flex h-8 w-full items-center gap-1 rounded-md border border-input bg-input/20 pl-2.5 text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30",
             className
           )}
         >
           <ComboboxPrimitive.Input
             id={inputId}
             placeholder={placeholder}
-            className="h-full w-full border-0 bg-transparent text-xs/relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="h-full w-full border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
           <ComboboxPrimitive.Trigger
             className="flex h-full shrink-0 items-center justify-center px-2 text-muted-foreground"
@@ -145,7 +145,7 @@ function ComboboxMultiple({
   const selected = options.filter((option) => value.includes(option.value))
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <Label htmlFor={inputId} className={hideLabel ? "sr-only" : undefined}>
         {label}
       </Label>
@@ -159,7 +159,7 @@ function ComboboxMultiple({
       >
         <ComboboxPrimitive.InputGroup
           className={cn(
-            "flex min-h-7 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-input/20 px-1.5 py-1 text-xs/relaxed transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30",
+            "flex min-h-8 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-input/20 px-1.5 py-1 text-sm transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30",
             className
           )}
         >
@@ -171,7 +171,7 @@ function ComboboxMultiple({
                     <ComboboxPrimitive.Chip
                       key={option.value}
                       aria-label={option.label}
-                      className="flex h-5 items-center gap-1 rounded-sm bg-secondary pl-1.5 pr-1 text-secondary-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+                      className="flex h-6 items-center gap-1 rounded-sm bg-secondary pl-1.5 pr-1 text-xs text-secondary-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground"
                     >
                       {option.label}
                       <ComboboxPrimitive.ChipRemove
@@ -185,14 +185,14 @@ function ComboboxMultiple({
                   <ComboboxPrimitive.Input
                     id={inputId}
                     placeholder={chips.length > 0 ? undefined : placeholder}
-                    className="h-5 min-w-16 flex-1 border-0 bg-transparent text-xs/relaxed text-foreground outline-none placeholder:text-muted-foreground"
+                    className="h-6 min-w-16 flex-1 border-0 bg-transparent pl-1 text-sm text-foreground outline-none placeholder:text-muted-foreground"
                   />
                 </>
               )}
             </ComboboxPrimitive.Value>
           </ComboboxPrimitive.Chips>
           <ComboboxPrimitive.Trigger
-            className="flex h-5 shrink-0 items-center justify-center text-muted-foreground"
+            className="flex h-6 shrink-0 items-center justify-center px-1 text-muted-foreground"
             aria-label="Ouvrir la liste"
           >
             <CaretDownIcon size={13} />

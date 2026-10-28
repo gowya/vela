@@ -90,6 +90,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AddPatientDialog } from "./AddPatientDialog";
 import { PatientDetailDrawer } from "./PatientDetailDrawer";
+import { PageShell } from "@/components/PageShell";
+import { PageHeader } from "@/components/PageHeader";
+import { FieldError } from "@/components/ui/field";
 
 function formatDate(value: Date | string | null): string {
   if (!value) return "—";
@@ -715,47 +718,49 @@ export function PatientsList() {
   const otherHeaders = headerGroup?.headers.filter((header) => header.column.id !== "name") ?? [];
 
   return (
-    <main className="flex min-h-screen min-w-0 flex-col gap-6 px-16 py-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold text-foreground">Patients</h1>
-          {patients !== null && (
+    <PageShell>
+      <PageHeader
+        title="Patients"
+        meta={
+          patients !== null && (
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
               <UsersIcon size={14} />
               {patients.length}
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" />}>
-              <ColumnsIcon size={14} />
-              Colonnes
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {[
-                ...OPTIONAL_COLUMN_IDS,
-                ...customFieldDefinitions.map((definition) => customColumnId(definition.id)),
-              ].map((id) => {
-                const column = table.getColumn(id);
-                if (!column) return null;
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
-                  >
-                    {getColumnLabel(id, customFieldDefinitions)}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <AddPatientDialog
-            onCreated={(patient) => setPatients((previous) => [...(previous ?? []), patient])}
-          />
-        </div>
-      </div>
+          )
+        }
+        actions={
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" />}>
+                <ColumnsIcon size={14} />
+                Colonnes
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {[
+                  ...OPTIONAL_COLUMN_IDS,
+                  ...customFieldDefinitions.map((definition) => customColumnId(definition.id)),
+                ].map((id) => {
+                  const column = table.getColumn(id);
+                  if (!column) return null;
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={id}
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(checked) => column.toggleVisibility(checked === true)}
+                    >
+                      {getColumnLabel(id, customFieldDefinitions)}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <AddPatientDialog
+              onCreated={(patient) => setPatients((previous) => [...(previous ?? []), patient])}
+            />
+          </>
+        }
+      />
 
       {patients !== null && patients.length > 0 && (
         <Input
@@ -765,7 +770,7 @@ export function PatientsList() {
         />
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       {patients === null && !error && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -957,6 +962,6 @@ export function PatientsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </PageShell>
   );
 }

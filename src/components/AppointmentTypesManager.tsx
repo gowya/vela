@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FieldError } from "@/components/ui/field";
 
 interface FormState {
   name: string;
@@ -122,7 +123,7 @@ export function AppointmentTypesManager() {
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError>{error}</FieldError>
 
       {types?.length === 0 && (
         <p className="text-sm text-muted-foreground">
@@ -204,7 +205,7 @@ export function AppointmentTypesManager() {
                 }
               />
             </div>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            <FieldError>{formError}</FieldError>
           </div>
 
           <DialogFooter>

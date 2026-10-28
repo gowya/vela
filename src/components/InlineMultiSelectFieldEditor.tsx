@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PencilSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ComboboxMultiple } from "@/components/ui/combobox";
+import { FieldError } from "@/components/ui/field";
 
 type Option = { value: string; label: string };
 
@@ -118,7 +119,7 @@ export function InlineMultiSelectFieldEditor({
           </>
         )}
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <FieldError>{error}</FieldError> : null}
     </div>
   );
 }

@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import pool from "@/lib/db";
 import { hashPasswordResetToken } from "@/lib/password-reset-token";
-import { AuthLayout } from "@/app/login/AuthLayout";
-import { authButtonClassName, authFooterLinkClassName } from "@/app/login/styles";
+import { AuthShell, authFooterLinkClassName } from "@/components/AuthShell";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ResetPasswordForm } from "./ResetPasswordForm";
@@ -41,23 +40,23 @@ export default async function ResetPasswordPage({
 
   if (!email || typeof token !== "string") {
     return (
-      <AuthLayout
+      <AuthShell
         title="Lien expiré"
         description="Ce lien n'est plus valide : il a déjà servi, ou date de plus d'une heure. Demandez-en un nouveau."
         footer={footer}
       >
         <Link
           href="/forgot-password"
-          className={cn(buttonVariants({ size: "lg" }), authButtonClassName, "mt-0")}
+          className={cn(buttonVariants({ size: "lg" }), "w-full")}
         >
           Demander un nouveau lien
         </Link>
-      </AuthLayout>
+      </AuthShell>
     );
   }
 
   return (
-    <AuthLayout
+    <AuthShell
       title="Nouveau mot de passe"
       description={
         <>
@@ -67,6 +66,6 @@ export default async function ResetPasswordPage({
       footer={footer}
     >
       <ResetPasswordForm token={token} email={email} />
-    </AuthLayout>
+    </AuthShell>
   );
 }

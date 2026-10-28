@@ -20,6 +20,7 @@ import {
   ALLOWED_ATTACHMENT_MIME_TYPES,
   MAX_ATTACHMENT_SIZE_BYTES,
 } from "@/lib/attachment-constraints";
+import { FieldError } from "@/components/ui/field";
 
 export const EMPTY_CONSULTATION_CONTENT: ConsultationContent = {
   type: "doc",
@@ -187,7 +188,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, TiptapEditorProps>(
           </div>
         )}
 
-        {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+        <FieldError className="text-xs">{uploadError}</FieldError>
 
         {editor && editable && <SelectionToolbar editor={editor} />}
         <EditorContent editor={editor} className="rounded-md" />

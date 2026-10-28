@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthLayout } from "@/app/login/AuthLayout";
-import { authFooterLinkClassName } from "@/app/login/styles";
+import { AuthShell, authFooterLinkClassName } from "@/components/AuthShell";
 import { ForgotPasswordForm } from "./ForgotPasswordForm";
 
 export const metadata: Metadata = {
@@ -10,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthLayout
+    <AuthShell
       title="Mot de passe oublié"
       description="Indiquez l'email de votre compte. Vous recevrez un lien pour choisir un nouveau mot de passe."
       footer={
@@ -20,6 +19,6 @@ export default function ForgotPasswordPage() {
       }
     >
       <ForgotPasswordForm />
-    </AuthLayout>
+    </AuthShell>
   );
 }

@@ -4,10 +4,10 @@ import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/app/login/PasswordInput";
-import { authButtonClassName, authFieldClassName, authLabelClassName } from "@/app/login/styles";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
+import { authFieldClassName } from "@/components/AuthShell";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 
 export function ResetPasswordForm({ token, email }: { token: string; email: string }) {
@@ -62,10 +62,8 @@ export function ResetPasswordForm({ token, email }: { token: string; email: stri
           de passe au bon compte. */}
       <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="new-password" className={authLabelClassName}>
-          Nouveau mot de passe
-        </Label>
+      <Field>
+        <FieldLabel htmlFor="new-password">Nouveau mot de passe</FieldLabel>
         <PasswordInput
           id="new-password"
           autoComplete="new-password"
@@ -82,21 +80,17 @@ export function ResetPasswordForm({ token, email }: { token: string; email: stri
           aria-describedby="new-password-hint"
           className={authFieldClassName}
         />
-        <p
+        <FieldDescription
           id="new-password-hint"
-          className={passwordError ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+          className={passwordError ? "text-destructive" : undefined}
         >
           {passwordError ?? `${PASSWORD_MIN_LENGTH} caractères minimum.`}
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
 
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FieldError>{error}</FieldError>
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className={authButtonClassName}>
+      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
         {isSubmitting ? "Enregistrement…" : "Enregistrer et me connecter"}
       </Button>
     </form>

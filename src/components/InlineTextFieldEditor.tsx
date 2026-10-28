@@ -5,6 +5,7 @@ import { PencilSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sanitizePhoneInput } from "@/lib/phone";
+import { FieldError } from "@/components/ui/field";
 
 type InlineTextFieldEditorProps = {
   field: string;
@@ -152,7 +153,7 @@ export function InlineTextFieldEditor({
           </>
         )}
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <FieldError>{error}</FieldError> : null}
     </div>
   );
 }
