@@ -209,15 +209,15 @@ describe("POST /api/auth/reset-password", () => {
     expect(hashAsToken.status).toBe(400);
   });
 
-  it("exige 8 caractères minimum, sans consommer le lien", async () => {
+  it("exige 10 caractères minimum, sans consommer le lien", async () => {
     const practitioner = await createPractitioner();
     await insertToken(practitioner.id, "jeton-valide", new Date(Date.now() + 60_000));
 
-    const tooShort = await applyReset(resetRequest({ token: "jeton-valide", password: "7-chars" }));
+    const tooShort = await applyReset(resetRequest({ token: "jeton-valide", password: "9-chars!!" }));
     expect(tooShort.status).toBe(422);
 
-    const exactly8 = await applyReset(resetRequest({ token: "jeton-valide", password: "8-chars!" }));
-    expect(exactly8.status).toBe(200);
+    const exactly10 = await applyReset(resetRequest({ token: "jeton-valide", password: "10-chars!!" }));
+    expect(exactly10.status).toBe(200);
   });
 
   it("bloque après 10 tentatives depuis la même IP en 15 minutes", async () => {

@@ -6,13 +6,16 @@ import { sendVerificationEmail } from "@/lib/email";
 import { generateVerificationToken, VERIFICATION_TOKEN_TTL_MS } from "@/lib/verification-token";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/request-ip";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 
 const SIGNUP_ATTEMPT_LIMIT = 5;
 const SIGNUP_ATTEMPT_WINDOW_MS = 60 * 60 * 1000;
 
 const signupSchema = z.object({
   email: z.string().trim().toLowerCase().email("Email invalide."),
-  password: z.string().min(10, "10 caractères minimum."),
+  password: z
+    .string()
+    .min(PASSWORD_MIN_LENGTH, `Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères.`),
   // Consentement RGPD requis pour la création du compte.
   consent: z.literal(true, {
     errorMap: () => ({
