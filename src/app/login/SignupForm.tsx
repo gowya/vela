@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
 import { authFieldClassName } from "@/components/AuthShell";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
 
 export function SignupForm() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export function SignupForm() {
   const [consentError, setConsentError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const passwordStrength = password.length === 0 ? null : password.length < 8 ? "faible" : "fort";
+  const passwordStrength = password.length === 0 ? null : password.length < PASSWORD_MIN_LENGTH ? "faible" : "fort";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,8 +33,8 @@ export function SignupForm() {
     setPasswordError(null);
     setConsentError(false);
 
-    if (password.length < 8) {
-      setPasswordError("Le mot de passe doit contenir au moins 8 caractères.");
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setPasswordError(`Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères.`);
       return;
     }
 
@@ -110,7 +111,7 @@ export function SignupForm() {
           id="signup-password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           aria-invalid={passwordError ? true : undefined}
@@ -121,7 +122,7 @@ export function SignupForm() {
           id="signup-password-hint"
           className={passwordError ? "text-destructive" : undefined}
         >
-          {passwordError ?? "8 caractères minimum."}
+          {passwordError ?? `${PASSWORD_MIN_LENGTH} caractères minimum.`}
         </FieldDescription>
       </Field>
 
