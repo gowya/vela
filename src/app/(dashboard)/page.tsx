@@ -329,11 +329,22 @@ export default async function Home({
                 <Link
                   key={appointment.id}
                   href={`/consultations/new?appointmentId=${appointment.id}`}
-                  className={isPast ? "opacity-60" : undefined}
                 >
-                  <Card className="cursor-pointer transition-colors hover:bg-muted/50">
-                    <CardContent className="flex items-center gap-4 py-3">
-                      <div className="flex w-16 shrink-0 items-center gap-1 text-sm font-medium tabular-nums text-foreground">
+                  {/* Passé : carte sans fond plutôt qu'une opacité, qui faisait
+                      tomber le texte sous le contraste AA. */}
+                  <Card
+                    className={
+                      isPast
+                        ? "cursor-pointer bg-transparent transition-colors hover:bg-muted/50"
+                        : "cursor-pointer transition-colors hover:bg-muted/50"
+                    }
+                  >
+                    <CardContent className="flex items-center gap-4">
+                      <div
+                        className={`flex w-16 shrink-0 items-center gap-1 font-mono text-sm font-medium ${
+                          isPast ? "text-muted-foreground" : "text-foreground"
+                        }`}
+                      >
                         <ClockIcon size={14} className="text-muted-foreground" />
                         {formatTime(appointment.scheduledAt)}
                       </div>
@@ -385,8 +396,8 @@ export default async function Home({
                   {group.items.map((appointment) => (
                     <Link key={appointment.id} href={`/consultations/new?appointmentId=${appointment.id}`}>
                       <Card className="cursor-pointer transition-colors hover:bg-muted/50">
-                        <CardContent className="flex items-center gap-4 py-3">
-                          <div className="flex w-16 shrink-0 items-center gap-1 text-sm font-medium tabular-nums text-foreground">
+                        <CardContent className="flex items-center gap-4">
+                          <div className="flex w-16 shrink-0 items-center gap-1 font-mono text-sm font-medium text-foreground">
                             <ClockIcon size={14} className="text-muted-foreground" />
                             {formatTime(appointment.scheduledAt)}
                           </div>
@@ -427,14 +438,16 @@ export default async function Home({
               {recentConsultations.map((consultation) => (
                 <Link key={consultation.id} href={`/consultations/${consultation.id}`}>
                   <Card className="cursor-pointer transition-colors hover:bg-muted/50">
-                    <CardContent className="flex items-center justify-between gap-4 py-3">
+                    <CardContent className="flex items-center justify-between gap-4">
+                      {/* Patient en titre, type de séance en complément : même
+                          hiérarchie que le tableau des consultations. */}
                       <p className="min-w-0 truncate text-sm font-medium text-foreground">
-                        {consultation.title ?? "Sans titre"}
+                        {consultation.patientFirstName} {consultation.patientLastName}
                         <span className="ml-2 text-xs font-normal text-muted-foreground">
-                          {consultation.patientFirstName} {consultation.patientLastName}
+                          {consultation.title ?? "Sans titre"}
                         </span>
                       </p>
-                      <span className="shrink-0 text-sm text-muted-foreground">
+                      <span className="shrink-0 font-mono text-sm text-muted-foreground">
                         {new Date(consultation.date).toLocaleDateString("fr-FR")}
                       </span>
                     </CardContent>

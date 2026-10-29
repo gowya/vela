@@ -68,7 +68,7 @@ function DatePicker({
               type="button"
               variant="outline"
               className={cn(
-                "w-full justify-start gap-2 font-normal",
+                "w-full justify-start gap-2 border-input bg-input/20 px-2.5 font-normal",
                 !selected && "text-muted-foreground",
                 className
               )}
@@ -76,7 +76,11 @@ function DatePicker({
           }
         >
           <CalendarIcon size={14} />
-          {selected ? selected.toLocaleDateString("fr-FR") : placeholder}
+          {selected ? (
+            <span className="font-mono">{selected.toLocaleDateString("fr-FR")}</span>
+          ) : (
+            placeholder
+          )}
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
@@ -149,7 +153,7 @@ function DateTimePicker({
               type="button"
               variant="outline"
               className={cn(
-                "w-full justify-start gap-2 font-normal",
+                "w-full justify-start gap-2 border-input bg-input/20 px-2.5 font-normal",
                 !selected && "text-muted-foreground",
                 className
               )}
@@ -157,9 +161,13 @@ function DateTimePicker({
           }
         >
           <CalendarIcon size={14} />
-          {selected
-            ? `${selected.toLocaleDateString("fr-FR")}${time ? ` à ${time}` : ""}`
-            : placeholder}
+          {selected ? (
+            <span className="font-mono">
+              {`${selected.toLocaleDateString("fr-FR")}${time ? ` à ${time}` : ""}`}
+            </span>
+          ) : (
+            placeholder
+          )}
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar

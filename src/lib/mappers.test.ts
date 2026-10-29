@@ -63,4 +63,13 @@ describe("mapConsultationListItemRow", () => {
 
     expect(result.excerpt).toBe("entouré d'espaces");
   });
+
+  it("sépare les blocs par un point médian plutôt que de les coller", () => {
+    const result = mapConsultationListItemRow({
+      ...baseRow,
+      content_text: "Contexte\nSéparation il y a quatre mois.\n\n  Objectifs  ",
+    });
+
+    expect(result.excerpt).toBe("Contexte · Séparation il y a quatre mois. · Objectifs");
+  });
 });

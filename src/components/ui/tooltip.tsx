@@ -43,7 +43,7 @@ function TooltipContent({
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            "z-50 origin-(--transform-origin) rounded-md bg-foreground px-2 py-1 text-[0.7rem] text-background shadow-md",
+            "z-50 origin-(--transform-origin) rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-md",
             // Fondu seul, sans zoom : le zoom-95 donnait un « pop » qui attire
             // l'œil sur une info secondaire. Ouverture douce et sortie plus
             // rapide (on ne fait pas attendre quelqu'un qui a déjà quitté).

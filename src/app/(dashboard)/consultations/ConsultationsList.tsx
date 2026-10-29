@@ -3,9 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { ClipboardTextIcon, TrashIcon } from "@phosphor-icons/react";
+import { ClipboardTextIcon, MagnifyingGlassIcon, TrashIcon } from "@phosphor-icons/react";
 import type { ConsultationListItem } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -39,6 +46,8 @@ import { PatientDetailDrawer } from "../patients/PatientDetailDrawer";
 import { PageShell } from "@/components/PageShell";
 import { PageHeader } from "@/components/PageHeader";
 import { FieldError } from "@/components/ui/field";
+import { SortableTableHead } from "@/components/SortableTableHead";
+import { applyTableSort, type TableSort } from "@/lib/table-sort";
 
 function formatDate(value: Date | string): string {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -54,24 +63,35 @@ function consultationLabel(consultation: ConsultationListItem): string {
   return consultation.title ?? consultation.templateName ?? "Sans titre";
 }
 
-function ConsultationCard({
+type ConsultationRowActions = {
+  onPatientClick: (patientId: string) => void;
+  selectionMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onRequestDelete: (consultation: ConsultationListItem) => void;
+};
+
+function ConsultationRow({
   consultation,
   showPatient,
   onPatientClick,
   selectionMode,
-  selected,
+  selectedIds,
   onToggleSelect,
   onRequestDelete,
-}: {
+}: ConsultationRowActions & {
   consultation: ConsultationListItem;
   showPatient: boolean;
-  onPatientClick: (patientId: string) => void;
-  selectionMode: boolean;
-  selected: boolean;
-  onToggleSelect: (id: string) => void;
-  onRequestDelete: (consultation: ConsultationListItem) => void;
 }) {
   const router = useRouter();
+
+  function openConsultation() {
+    if (selectionMode) {
+      onToggleSelect(consultation.id);
+      return;
+    }
+    router.push(`/consultations/${consultation.id}`);
+  }
 
   return (
     <ContextMenu>
@@ -81,56 +101,56 @@ function ConsultationCard({
           // élément cliquable (ouvrir ses infos sans quitter la liste, retour
           // test user #01, P3), et un <button> imbriqué dans un <a> serait
           // invalide.
-          <Card
-            className="cursor-pointer transition-colors hover:bg-muted/50"
-            onClick={() => {
-              if (selectionMode) {
-                onToggleSelect(consultation.id);
-                return;
+          <TableRow
+            role="button"
+            tabIndex={0}
+            onClick={openConsultation}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openConsultation();
               }
-              router.push(`/consultations/${consultation.id}`);
             }}
+            className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           />
         }
       >
-        <CardContent className="flex flex-col gap-1 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-2">
-              {selectionMode && (
-                <span onClick={(event) => event.stopPropagation()}>
-                  <Checkbox
-                    checked={selected}
-                    onCheckedChange={() => onToggleSelect(consultation.id)}
-                    aria-label="Sélectionner cette consultation"
-                  />
-                </span>
-              )}
-              <p className="min-w-0 truncate text-sm font-medium text-foreground">
-                {consultationLabel(consultation)}
-                {showPatient && (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onPatientClick(consultation.patientId);
-                    }}
-                    className="ml-2 text-xs font-normal text-muted-foreground hover:text-foreground hover:underline"
-                  >
-                    {consultation.patientFirstName} {consultation.patientLastName}
-                  </button>
-                )}
-              </p>
-            </div>
-            <span className="shrink-0 text-sm text-muted-foreground">
-              {formatDate(consultation.date)}
+        {selectionMode && (
+          <TableCell className="w-8">
+            <span onClick={(event) => event.stopPropagation()}>
+              <Checkbox
+                checked={selectedIds.has(consultation.id)}
+                onCheckedChange={() => onToggleSelect(consultation.id)}
+                aria-label="Sélectionner cette consultation"
+              />
             </span>
-          </div>
-          {consultation.excerpt && (
-            <p className="line-clamp-1 text-xs text-muted-foreground">
-              {consultation.excerpt}
-            </p>
-          )}
-        </CardContent>
+          </TableCell>
+        )}
+        {/* Le patient est l'information principale de la ligne : c'est lui
+            qu'on cherche, pas le type de séance. */}
+        {showPatient && (
+          <TableCell>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onPatientClick(consultation.patientId);
+              }}
+              className="font-medium text-foreground hover:underline"
+            >
+              {consultation.patientFirstName} {consultation.patientLastName}
+            </button>
+          </TableCell>
+        )}
+        <TableCell className={showPatient ? undefined : "font-medium"}>
+          {consultationLabel(consultation)}
+        </TableCell>
+        <TableCell className="w-full max-w-0 truncate text-muted-foreground">
+          {consultation.excerpt}
+        </TableCell>
+        <TableCell className="text-right font-mono text-muted-foreground">
+          {formatDate(consultation.date)}
+        </TableCell>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem variant="destructive" onClick={() => onRequestDelete(consultation)}>
@@ -139,6 +159,64 @@ function ConsultationCard({
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
+  );
+}
+
+type ConsultationSortKey = "patient" | "label" | "date";
+
+const CONSULTATION_SORT_VALUES: Record<
+  ConsultationSortKey,
+  (consultation: ConsultationListItem) => string | number
+> = {
+  patient: (consultation) => `${consultation.patientFirstName} ${consultation.patientLastName}`,
+  label: consultationLabel,
+  date: (consultation) => new Date(consultation.date).getTime(),
+};
+
+// Même cadre que les tableaux Patients et Rendez-vous. Sans tri choisi, on
+// garde l'ordre de l'API (date décroissante).
+function ConsultationsTable({
+  consultations,
+  showPatient,
+  sort,
+  onSortChange,
+  ...actions
+}: ConsultationRowActions & {
+  consultations: ConsultationListItem[];
+  showPatient: boolean;
+  sort: TableSort<ConsultationSortKey>;
+  onSortChange: (sort: TableSort<ConsultationSortKey>) => void;
+}) {
+  const sortProps = { sort, onSortChange };
+
+  return (
+    <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {actions.selectionMode && (
+              <TableHead className="w-8">
+                <span className="sr-only">Sélection</span>
+              </TableHead>
+            )}
+            {showPatient && <SortableTableHead label="Patient" sortKey="patient" {...sortProps} />}
+            <SortableTableHead label="Séance" sortKey="label" {...sortProps} />
+            <TableHead>Aperçu</TableHead>
+            <SortableTableHead label="Date" sortKey="date" className="text-right" {...sortProps} />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {applyTableSort(consultations, sort, CONSULTATION_SORT_VALUES).map((consultation) => (
+            <ConsultationRow
+              key={consultation.id}
+              consultation={consultation}
+              showPatient={showPatient}
+              {...actions}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -176,6 +254,7 @@ export function ConsultationsList() {
   const [consultations, setConsultations] = useState<ConsultationListItem[] | null>(null);
   const [search, setSearch] = useState("");
   const [view, setView] = useState("basic");
+  const [sort, setSort] = useState<TableSort<ConsultationSortKey>>(null);
   const [error, setError] = useState<string | null>(null);
   // Infos patient "à portée de main" sans quitter la liste des consultations
   // (retour test user #01, P3) : réutilise le même drawer que la page Patients.
@@ -260,6 +339,14 @@ export function ConsultationsList() {
   }, [search, patientId]);
 
   const isEmpty = consultations?.length === 0;
+  const rowActions: ConsultationRowActions = {
+    onPatientClick: setOpenPatientId,
+    selectionMode,
+    selectedIds,
+    onToggleSelect: toggleSelected,
+    onRequestDelete: (target) => setDeleteRequest({ kind: "single", consultation: target }),
+  };
+  const tableProps = { ...rowActions, sort, onSortChange: setSort };
 
   return (
     <PageShell>
@@ -283,11 +370,20 @@ export function ConsultationsList() {
         }
       />
 
-      <Input
-        placeholder="Rechercher par patient, mot-clé, problématique, date…"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-      />
+      <div className="relative">
+        <MagnifyingGlassIcon
+          size={14}
+          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          type="search"
+          aria-label="Rechercher une consultation"
+          placeholder="Rechercher par patient, mot-clé, problématique, date…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          className="pl-8"
+        />
+      </div>
 
       {selectionMode && selectedIds.size > 0 && (
         <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
@@ -314,18 +410,16 @@ export function ConsultationsList() {
       <FieldError>{error}</FieldError>
 
       {consultations === null && !error && (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index}>
-              <CardContent className="flex flex-col gap-2 py-3">
-                <div className="flex items-center justify-between gap-4">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-3 w-72" />
-              </CardContent>
-            </Card>
-          ))}
+        // Même silhouette que l'écran chargé (onglets + tableau encadré).
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-44" />
+          <div className="flex flex-col rounded-lg border border-border bg-card px-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="border-b border-border py-2.5 last:border-0">
+                <Skeleton className="h-5 w-full" />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -360,22 +454,13 @@ export function ConsultationsList() {
           </TabsList>
 
           <TabsContent value="basic">
-            <div className="flex flex-col gap-2">
-              {consultations.map((consultation) => (
-                <ConsultationCard
-                  key={consultation.id}
-                  consultation={consultation}
-                  // Vue globale : on montre le patient ; si la liste est déjà
-                  // filtrée sur un patient, c'est redondant.
-                  showPatient={!patientId}
-                  onPatientClick={setOpenPatientId}
-                  selectionMode={selectionMode}
-                  selected={selectedIds.has(consultation.id)}
-                  onToggleSelect={toggleSelected}
-                  onRequestDelete={(target) => setDeleteRequest({ kind: "single", consultation: target })}
-                />
-              ))}
-            </div>
+            <ConsultationsTable
+              consultations={consultations}
+              // Vue globale : on montre le patient ; si la liste est déjà
+              // filtrée sur un patient, c'est redondant.
+              showPatient={!patientId}
+              {...tableProps}
+            />
           </TabsContent>
 
           <TabsContent value="byPatient">
@@ -385,24 +470,15 @@ export function ConsultationsList() {
                   <button
                     type="button"
                     onClick={() => setOpenPatientId(group.patientId)}
-                    className="text-left text-sm font-semibold text-foreground hover:underline"
+                    className="self-start text-left text-sm font-semibold text-foreground hover:underline"
                   >
                     {group.patientName}
                   </button>
-                  <div className="flex flex-col gap-2">
-                    {group.items.map((consultation) => (
-                      <ConsultationCard
-                        key={consultation.id}
-                        consultation={consultation}
-                        showPatient={false}
-                        onPatientClick={setOpenPatientId}
-                        selectionMode={selectionMode}
-                        selected={selectedIds.has(consultation.id)}
-                        onToggleSelect={toggleSelected}
-                        onRequestDelete={(target) => setDeleteRequest({ kind: "single", consultation: target })}
-                      />
-                    ))}
-                  </div>
+                  <ConsultationsTable
+                    consultations={group.items}
+                    showPatient={false}
+                    {...tableProps}
+                  />
                 </div>
               ))}
             </div>

@@ -106,7 +106,7 @@ export function AppSidebar({ userName }: AppSidebarProps) {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger render={<SidebarMenuButton />}>
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-[0.6rem] font-medium text-sidebar-primary-foreground">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-medium text-sidebar-primary-foreground">
                   {getInitials(userName)}
                 </span>
                 <span className="truncate">{userName}</span>

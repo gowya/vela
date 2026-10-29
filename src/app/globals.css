@@ -31,7 +31,10 @@
     /* Brume — bordures, séparateurs, champs inactifs */
     --border: oklch(0.868 0.015 84.586);
     --input: oklch(0.868 0.015 84.586);
-    --ring: oklch(0.55 0.06 11.232);
+    /* Focus en sauge, pas en vin : un halo vin se lit comme une erreur. Sauge
+       assombrie (même teinte) pour tenir le contraste 3:1 d'un indicateur de
+       focus — la sauge du brand book (#A9B8AC) ne fait que ~2:1 sur blanc chaud. */
+    --ring: oklch(0.56 0.05 151.535);
     --chart-1: oklch(0.422 0.062 11.232);
     --chart-2: oklch(0.531 0.062 11.008);
     --chart-3: oklch(0.65 0.05 11.1);
@@ -47,7 +50,7 @@
     --sidebar-accent: oklch(0.91 0.008 84.581);
     --sidebar-accent-foreground: oklch(0.285 0.004 84.581);
     --sidebar-border: oklch(0.868 0.015 84.586);
-    --sidebar-ring: oklch(0.55 0.06 11.232);
+    --sidebar-ring: oklch(0.56 0.05 151.535);
   }
 
   .dark {
@@ -59,9 +62,11 @@
     --card-foreground: oklch(0.95 0.011 84.579);
     --popover: oklch(0.27 0.005 84.581);
     --popover-foreground: oklch(0.95 0.011 84.579);
-    /* Vin ajusté #8C5D63 pour rester lisible en sombre */
-    --primary: oklch(0.531 0.062 11.008);
-    --primary-foreground: oklch(0.994 0.006 84.566);
+    /* Vin éclairci en vieux rose : le vin #8C5D63 tombait à ~3:1 comme
+       couleur de texte (liens, badges) sur les cartes sombres. Les boutons
+       passent en vieux rose avec texte encre. */
+    --primary: oklch(0.75 0.068 8);
+    --primary-foreground: oklch(0.222 0.004 84.588);
     --secondary: oklch(0.33 0.006 84.581);
     --secondary-foreground: oklch(0.95 0.011 84.579);
     --muted: oklch(0.33 0.006 84.581);
@@ -71,7 +76,7 @@
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.531 0.062 11.008);
+    --ring: oklch(0.72 0.045 151.535);
     --chart-1: oklch(0.531 0.062 11.008);
     --chart-2: oklch(0.65 0.05 11.1);
     --chart-3: oklch(0.75 0.03 11.2);
@@ -79,12 +84,12 @@
     --chart-5: oklch(0.33 0.006 84.581);
     --sidebar: oklch(0.18 0.003 84.588);
     --sidebar-foreground: oklch(0.95 0.011 84.579);
-    --sidebar-primary: oklch(0.531 0.062 11.008);
-    --sidebar-primary-foreground: oklch(0.994 0.006 84.566);
+    --sidebar-primary: oklch(0.75 0.068 8);
+    --sidebar-primary-foreground: oklch(0.222 0.004 84.588);
     --sidebar-accent: oklch(0.27 0.005 84.581);
     --sidebar-accent-foreground: oklch(0.95 0.011 84.579);
     --sidebar-border: oklch(0.27 0.005 84.581);
-    --sidebar-ring: oklch(0.531 0.062 11.008);
+    --sidebar-ring: oklch(0.72 0.045 151.535);
   }
 
   * {

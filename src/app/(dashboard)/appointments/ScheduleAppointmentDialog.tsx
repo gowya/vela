@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { InfoIcon } from "@phosphor-icons/react";
 import type { AppointmentListItem, AppointmentType } from "@/types";
 import {
@@ -25,7 +25,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PatientPicker } from "@/app/(dashboard)/patients/PatientPicker";
 import { formatDuration } from "@/lib/duration";
-import { FieldError } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 
 // Valeur du select réservée pour "pas de type, durée manuelle" — les ids de
 // type sont des UUID, cette chaîne ne peut jamais entrer en collision.
@@ -37,7 +37,7 @@ interface ScheduleAppointmentDialogProps {
   // Absent = mode création (choisir/créer un patient + une date).
   appointment?: AppointmentListItem;
   onSaved: (appointment: AppointmentListItem) => void;
-  triggerLabel?: string;
+  triggerLabel?: ReactNode;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";
   // Mode contrôlé : l'ouverture est pilotée par le parent (depuis un menu
   // d'actions, par exemple) et le dialog n'affiche pas son propre déclencheur.
@@ -210,8 +210,8 @@ export function ScheduleAppointmentDialog({
             disablePast
           />
 
-          <div>
-            <div className="mb-1 flex items-center gap-1">
+          <Field>
+            <div className="flex items-center gap-1">
               <Label htmlFor="appointment-type">Type de rendez-vous</Label>
               <TooltipProvider>
                 <Tooltip>
@@ -252,15 +252,15 @@ export function ScheduleAppointmentDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
 
           {selectedType ? (
             <p className="text-sm text-muted-foreground">
-              Durée : {formatDuration(selectedType.durationMinutes)}
+              Durée : <span className="font-mono">{formatDuration(selectedType.durationMinutes)}</span>
             </p>
           ) : (
-            <div>
-              <Label htmlFor="appointment-manual-duration" className="mb-1">
+            <Field className="w-32">
+              <Label htmlFor="appointment-manual-duration">
                 Durée (minutes)
               </Label>
               <Input
@@ -271,9 +271,8 @@ export function ScheduleAppointmentDialog({
                 step={5}
                 value={manualDuration}
                 onChange={(event) => setManualDuration(event.target.value)}
-                className="w-32"
               />
-            </div>
+            </Field>
           )}
 
           <FieldError>{error}</FieldError>

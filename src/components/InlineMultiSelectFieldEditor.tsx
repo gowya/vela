@@ -92,10 +92,10 @@ export function InlineMultiSelectFieldEditor({
               onValueChange={setDraftValue}
               placeholder={placeholder}
             />
-            <Button type="button" size="sm" onClick={() => void handleSave()} disabled={isSaving}>
+            <Button type="button" onClick={() => void handleSave()} disabled={isSaving}>
               {isSaving ? "Enregistrement…" : "Enregistrer"}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={handleCancel}>
+            <Button type="button" variant="ghost" onClick={handleCancel}>
               Annuler
             </Button>
           </>
@@ -111,7 +111,7 @@ export function InlineMultiSelectFieldEditor({
             <button
               type="button"
               onClick={handleStartEdit}
-              className="rounded-full p-1 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label={`Modifier ${label.toLowerCase()}`}
             >
               <PencilSimple size={16} />

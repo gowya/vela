@@ -204,6 +204,20 @@ export function mapConsultationAttachmentRow(row: {
 
 const EXCERPT_LENGTH = 140;
 
+// `content_text` sépare chaque bloc (intertitre, paragraphe…) par un saut de
+// ligne, que l'aperçu sur une seule ligne réduit à une espace : "Contexte
+// Séparation il y a…". On marque la frontière de bloc par un point médian.
+function buildExcerpt(contentText: string): string {
+  const flattened = contentText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" · ");
+  return flattened.length > EXCERPT_LENGTH
+    ? `${flattened.slice(0, EXCERPT_LENGTH)}…`
+    : flattened;
+}
+
 export function mapConsultationListItemRow(row: {
   id: string;
   patient_id: string;
@@ -216,11 +230,7 @@ export function mapConsultationListItemRow(row: {
   date: Date;
   updated_at: Date;
 }): ConsultationListItem {
-  const trimmed = row.content_text.trim();
-  const excerpt =
-    trimmed.length > EXCERPT_LENGTH
-      ? `${trimmed.slice(0, EXCERPT_LENGTH)}…`
-      : trimmed;
+  const excerpt = buildExcerpt(row.content_text);
 
   return {
     id: row.id,
@@ -244,9 +254,7 @@ export function mapConsultationVersionRow(row: {
   content_text: string;
   created_at: Date;
 }): ConsultationVersion {
-  const trimmed = row.content_text.trim();
-  const excerpt =
-    trimmed.length > EXCERPT_LENGTH ? `${trimmed.slice(0, EXCERPT_LENGTH)}…` : trimmed;
+  const excerpt = buildExcerpt(row.content_text);
 
   return {
     id: row.id,

@@ -83,10 +83,10 @@ export function AttachmentView({ node, deleteNode, extension, selected }: ReactN
           >
             {fileName}
           </a>
-          <p className="text-[0.625rem] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {formatSize(sizeBytes)} · {mimeType}
           </p>
-          <FieldError className="text-[0.625rem]">{error}</FieldError>
+          <FieldError className="text-xs">{error}</FieldError>
         </div>
         <a
           href={url}
