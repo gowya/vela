@@ -47,6 +47,27 @@ describe("POST /api/demo", () => {
     expect(counts[0].today_appointments).toBeGreaterThan(0);
   });
 
+  it("règle l'agenda sur 9h-20h en semaine, sans rendez-vous hors de cette plage", async () => {
+    const { email } = await (await POST(demoRequest())).json();
+    const { rows } = await pool.query(
+      "SELECT id, opening_hours FROM practitioners WHERE email = $1",
+      [email]
+    );
+
+    expect(rows[0].opening_hours.mon).toEqual({ enabled: true, start: "09:00", end: "20:00" });
+    expect(rows[0].opening_hours.sun.enabled).toBe(false);
+
+    const { rows: outOfRange } = await pool.query(
+      `SELECT a.id FROM appointments a JOIN patients p ON p.id = a.patient_id
+       WHERE p.practitioner_id = $1
+         AND ((a.scheduled_at AT TIME ZONE 'Europe/Paris')::time < '09:00'
+           OR ((a.scheduled_at + make_interval(mins => a.duration_minutes))
+                 AT TIME ZONE 'Europe/Paris')::time > '20:00')`,
+      [rows[0].id]
+    );
+    expect(outOfRange).toHaveLength(0);
+  });
+
   it("crée un espace distinct à chaque visite", async () => {
     const first = await (await POST(demoRequest())).json();
     const second = await (await POST(demoRequest())).json();

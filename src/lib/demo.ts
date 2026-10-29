@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import type { PoolClient } from "pg";
 import pool from "@/lib/db";
 import { deriveContentText } from "@/lib/consultation-utils";
-import type { ConsultationContent } from "@/types";
+import type { ConsultationContent, OpeningHours } from "@/types";
 
 // Un espace démo est un vrai compte praticien, jetable : un par visiteur, pour
 // que deux personnes qui testent en même temps ne se marchent pas dessus. Le
@@ -184,7 +184,7 @@ const DEMO_APPOINTMENTS: DemoAppointment[] = [
   {
     patient: "couple",
     dayOffset: -10,
-    time: "19:00",
+    time: "18:30",
     type: "couple",
     consultation: {
       title: "Séance de couple",
@@ -230,6 +230,20 @@ const DEMO_APPOINTMENTS: DemoAppointment[] = [
   { patient: "julien", dayOffset: 3, time: "09:00", type: "followUp" },
   { patient: "camille", dayOffset: 1, time: "11:00", type: "first" },
 ];
+
+// Les horaires d'ouverture fixent la plage affichée par l'agenda : sans eux, la
+// grille couvre toute la journée et la démo s'ouvre sur des créneaux vides à
+// 00:00. Aucun rendez-vous du jeu de données ne sort de cette plage.
+const DEMO_WORKING_DAY = { enabled: true, start: "09:00", end: "20:00" };
+const DEMO_OPENING_HOURS: OpeningHours = {
+  mon: DEMO_WORKING_DAY,
+  tue: DEMO_WORKING_DAY,
+  wed: DEMO_WORKING_DAY,
+  thu: DEMO_WORKING_DAY,
+  fri: DEMO_WORKING_DAY,
+  sat: { ...DEMO_WORKING_DAY, enabled: false },
+  sun: { ...DEMO_WORKING_DAY, enabled: false },
+};
 
 const APPOINTMENT_TYPES = {
   first: { name: "Première séance", durationMinutes: 60 },
@@ -338,10 +352,10 @@ export async function createDemoPractitioner(): Promise<{ email: string; passwor
     );
     const { rows } = await client.query(
       `INSERT INTO practitioners (email, password_hash, first_name, last_name, specialties,
-         email_verified_at, onboarding_completed_at, beta_notice_dismissed_at)
-       VALUES ($1, $2, 'Claire', 'Delmas', ARRAY['psychologie'], now(), now(), now())
+         opening_hours, email_verified_at, onboarding_completed_at, beta_notice_dismissed_at)
+       VALUES ($1, $2, 'Claire', 'Delmas', ARRAY['psychologie'], $3, now(), now(), now())
        RETURNING id`,
-      [email, passwordHash]
+      [email, passwordHash, JSON.stringify(DEMO_OPENING_HOURS)]
     );
     await seedDemoData(client, rows[0].id);
     await client.query("COMMIT");
