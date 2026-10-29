@@ -8,9 +8,9 @@ import {
   DotsThreeIcon,
   GearIcon,
   PencilSimpleIcon,
+  PlusIcon,
 } from "@phosphor-icons/react";
 import type { AppointmentListItem } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -57,6 +57,8 @@ import { AppointmentsCalendar } from "./AppointmentsCalendar";
 import { PageShell } from "@/components/PageShell";
 import { PageHeader } from "@/components/PageHeader";
 import { FieldError } from "@/components/ui/field";
+import { SortableTableHead } from "@/components/SortableTableHead";
+import { applyTableSort, type TableSort } from "@/lib/table-sort";
 
 function formatDate(value: Date | string): string {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -91,8 +93,50 @@ function getStatus(
   return { label: "À venir", className: "bg-primary/10 text-primary" };
 }
 
+// Liste : ce qui arrive d'abord (du plus proche au plus lointain), puis
+// l'historique (du plus récent au plus ancien). Un tri chronologique simple
+// enterrait les prochains rendez-vous sous tout le passé.
+function sortForList(appointments: AppointmentListItem[], now: Date): AppointmentListItem[] {
+  const time = (appointment: AppointmentListItem) => new Date(appointment.scheduledAt).getTime();
+  const upcoming = appointments.filter((appointment) => time(appointment) >= now.getTime());
+  const past = appointments.filter((appointment) => time(appointment) < now.getTime());
+  return [
+    ...upcoming.sort((a, b) => time(a) - time(b)),
+    ...past.sort((a, b) => time(b) - time(a)),
+  ];
+}
+
+type AppointmentSortKey = "patient" | "date" | "time" | "type" | "status";
+
+// Ordre logique des statuts (pas alphabétique) pour le tri de la colonne.
+const STATUS_RANK: Record<string, number> = {
+  "Aujourd'hui": 0,
+  "À venir": 1,
+  Passé: 2,
+  Annulé: 3,
+};
+
+function sortValues(now: Date): Record<
+  AppointmentSortKey,
+  (appointment: AppointmentListItem) => string | number
+> {
+  return {
+    patient: (appointment) => `${appointment.patientFirstName} ${appointment.patientLastName}`,
+    date: (appointment) => new Date(appointment.scheduledAt).getTime(),
+    // Heure de la journée seule : regrouper les créneaux du matin, du soir…
+    time: (appointment) => {
+      const date = new Date(appointment.scheduledAt);
+      return date.getHours() * 60 + date.getMinutes();
+    },
+    type: (appointment) => appointment.appointmentTypeName ?? "",
+    status: (appointment) => STATUS_RANK[getStatus(appointment, now).label] ?? 0,
+  };
+}
+
 export function AppointmentsList() {
   const [appointments, setAppointments] = useState<AppointmentListItem[] | null>(null);
+  // Sans tri choisi : à venir d'abord, puis l'historique (sortForList).
+  const [sort, setSort] = useState<TableSort<AppointmentSortKey>>(null);
   const [error, setError] = useState<string | null>(null);
   const [openPatientId, setOpenPatientId] = useState<string | null>(null);
   const [appointmentToCancel, setAppointmentToCancel] = useState<AppointmentListItem | null>(
@@ -163,14 +207,17 @@ export function AppointmentsList() {
       <FieldError>{error}</FieldError>
 
       {appointments === null && !error && (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index}>
-              <CardContent className="py-3">
+        // Même silhouette que l'écran chargé (onglets + tableau) pour éviter
+        // le saut de mise en page à l'arrivée des données.
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-36" />
+          <div className="flex flex-col rounded-lg border border-border bg-card px-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="border-b border-border py-2.5 last:border-0">
                 <Skeleton className="h-5 w-full" />
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -216,115 +263,117 @@ export function AppointmentsList() {
             )}
           </div>
 
-          <TabsContent value="liste">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Heure</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appointments.map((appointment) => {
-                  const status = getStatus(appointment, now);
-                  const isCancelled = Boolean(appointment.cancelledAt);
+          <TabsContent value="liste" className="flex flex-col gap-2">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableTableHead label="Patient" sortKey="patient" sort={sort} onSortChange={setSort} />
+                    <SortableTableHead label="Date" sortKey="date" sort={sort} onSortChange={setSort} />
+                    <SortableTableHead label="Heure" sortKey="time" sort={sort} onSortChange={setSort} />
+                    <SortableTableHead label="Type" sortKey="type" sort={sort} onSortChange={setSort} />
+                    <SortableTableHead label="Statut" sortKey="status" sort={sort} onSortChange={setSort} />
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {applyTableSort(sortForList(appointments, now), sort, sortValues(now)).map((appointment) => {
+                    const status = getStatus(appointment, now);
+                    const isCancelled = Boolean(appointment.cancelledAt);
 
-                  const cells = (
-                    <>
-                      <TableCell>
-                        <button
-                          type="button"
-                          onClick={() => setOpenPatientId(appointment.patientId)}
-                          className="hover:text-foreground hover:underline"
-                        >
-                          {appointment.patientFirstName} {appointment.patientLastName}
-                        </button>
-                      </TableCell>
-                      <TableCell>{formatDate(appointment.scheduledAt)}</TableCell>
-                      <TableCell>{formatTime(appointment.scheduledAt)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {appointment.appointmentTypeName ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                            status.className
-                          )}
-                        >
-                          {status.label}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {!isCancelled && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              render={
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  aria-label="Plus d'actions"
-                                />
-                              }
-                            >
-                              <DotsThreeIcon size={18} weight="bold" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setAppointmentToEdit(appointment)}>
-                                <PencilSimpleIcon size={14} />
-                                Modifier
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => setAppointmentToCancel(appointment)}
+                    const cells = (
+                      <>
+                        <TableCell>
+                          <button
+                            type="button"
+                            onClick={() => setOpenPatientId(appointment.patientId)}
+                            className="font-medium hover:underline"
+                          >
+                            {appointment.patientFirstName} {appointment.patientLastName}
+                          </button>
+                        </TableCell>
+                        <TableCell className="font-mono">{formatDate(appointment.scheduledAt)}</TableCell>
+                        <TableCell className="font-mono">{formatTime(appointment.scheduledAt)}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {appointment.appointmentTypeName ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                              status.className
+                            )}
+                          >
+                            {status.label}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {!isCancelled && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label="Plus d'actions"
+                                  />
+                                }
                               >
-                                <CalendarXIcon size={14} />
-                                Annuler
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </>
-                  );
-
-                  // Un rendez-vous annulé n'a plus d'action : pas de menu
-                  // contextuel non plus, sinon le clic droit ouvrirait un menu vide
-                  // (et bloquerait au passage le menu natif du navigateur).
-                  if (isCancelled) {
-                    return (
-                      <TableRow key={appointment.id} className="opacity-60">
-                        {cells}
-                      </TableRow>
+                                <DotsThreeIcon size={18} weight="bold" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setAppointmentToEdit(appointment)}>
+                                  <PencilSimpleIcon size={14} />
+                                  Modifier
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => setAppointmentToCancel(appointment)}
+                                >
+                                  <CalendarXIcon size={14} />
+                                  Annuler
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                      </>
                     );
-                  }
 
-                  return (
-                    <ContextMenu key={appointment.id}>
-                      <ContextMenuTrigger render={<TableRow />}>{cells}</ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuItem onClick={() => setAppointmentToEdit(appointment)}>
-                          <PencilSimpleIcon size={14} />
-                          Modifier
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          variant="destructive"
-                          onClick={() => setAppointmentToCancel(appointment)}
-                        >
-                          <CalendarXIcon size={14} />
-                          Annuler
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                    // Un rendez-vous annulé n'a plus d'action : pas de menu
+                    // contextuel non plus, sinon le clic droit ouvrirait un menu vide
+                    // (et bloquerait au passage le menu natif du navigateur).
+                    if (isCancelled) {
+                      return (
+                        <TableRow key={appointment.id} className="text-muted-foreground">
+                          {cells}
+                        </TableRow>
+                      );
+                    }
+
+                    return (
+                      <ContextMenu key={appointment.id}>
+                        <ContextMenuTrigger render={<TableRow />}>{cells}</ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem onClick={() => setAppointmentToEdit(appointment)}>
+                            <PencilSimpleIcon size={14} />
+                            Modifier
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            variant="destructive"
+                            onClick={() => setAppointmentToCancel(appointment)}
+                          >
+                            <CalendarXIcon size={14} />
+                            Annuler
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
 
             {/* Ajout dans la continuité du tableau : après avoir parcouru ses
                 rendez-vous, on planifie le suivant sans remonter au bouton du
@@ -332,7 +381,12 @@ export function AppointmentsList() {
             <div className="flex">
               <ScheduleAppointmentDialog
                 onSaved={upsertLocal}
-                triggerLabel="+ Nouveau rendez-vous"
+                triggerLabel={
+                  <>
+                    <PlusIcon size={14} />
+                    Nouveau rendez-vous
+                  </>
+                }
                 triggerVariant="ghost"
               />
             </div>

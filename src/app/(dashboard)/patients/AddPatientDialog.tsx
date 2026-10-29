@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Patient } from "@/types";
 import {
@@ -34,7 +34,7 @@ const emptyForm: PatientFormState = {
 interface AddPatientDialogProps {
   onCreated: (patient: Patient) => void;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";
-  triggerLabel?: string;
+  triggerLabel?: ReactNode;
   triggerSize?: "default" | "xs" | "sm" | "lg";
 }
 

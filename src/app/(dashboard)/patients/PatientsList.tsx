@@ -38,6 +38,7 @@ import {
   ColumnsIcon,
   CopyIcon,
   DotsSixVerticalIcon,
+  MagnifyingGlassIcon,
   PencilSimpleIcon,
   TrashIcon,
   UsersIcon,
@@ -596,7 +597,7 @@ export function PatientsList() {
           const patient = row.original;
           if (patient.nextAppointmentAt) {
             return (
-              <span className="text-muted-foreground">{formatDateTime(patient.nextAppointmentAt)}</span>
+              <span className="font-mono text-muted-foreground">{formatDateTime(patient.nextAppointmentAt)}</span>
             );
           }
           return (
@@ -644,17 +645,19 @@ export function PatientsList() {
       {
         id: "birthDate",
         accessorFn: (patient) => patient.birthDate ?? "",
-        cell: ({ row }) => formatDate(row.original.birthDate),
+        cell: ({ row }) => <span className="font-mono">{formatDate(row.original.birthDate)}</span>,
       },
       {
         id: "lastAppointmentAt",
         accessorFn: (patient) => (patient.lastAppointmentAt ? new Date(patient.lastAppointmentAt) : null),
-        cell: ({ row }) => formatDateTime(row.original.lastAppointmentAt),
+        cell: ({ row }) => (
+          <span className="font-mono">{formatDateTime(row.original.lastAppointmentAt)}</span>
+        ),
       },
       {
         id: "createdAt",
         accessorFn: (patient) => new Date(patient.createdAt),
-        cell: ({ row }) => formatDate(row.original.createdAt),
+        cell: ({ row }) => <span className="font-mono">{formatDate(row.original.createdAt)}</span>,
       },
       ...customFieldDefinitions.map(
         (definition): ColumnDef<Patient> => ({
@@ -723,7 +726,7 @@ export function PatientsList() {
         title="Patients"
         meta={
           patients !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground">
               <UsersIcon size={14} />
               {patients.length}
             </span>
@@ -763,11 +766,20 @@ export function PatientsList() {
       />
 
       {patients !== null && patients.length > 0 && (
-        <Input
-          placeholder="Rechercher par nom, mot-clé, problématique…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+        <div className="relative">
+          <MagnifyingGlassIcon
+            size={14}
+            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            type="search"
+            aria-label="Rechercher un patient"
+            placeholder="Rechercher par nom, mot-clé, problématique…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="pl-8"
+          />
+        </div>
       )}
 
       <FieldError>{error}</FieldError>

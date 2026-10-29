@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PlusIcon } from "@phosphor-icons/react";
 import type { Patient } from "@/types";
 import { Combobox } from "@/components/ui/combobox";
 import { AddPatientDialog } from "./AddPatientDialog";
@@ -25,7 +26,7 @@ export function PatientPicker({ value, onValueChange, error }: PatientPickerProp
   }, []);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 [&>button]:self-start">
       <Combobox
         label="Patient"
         options={(patients ?? []).map((patient) => ({
@@ -38,7 +39,12 @@ export function PatientPicker({ value, onValueChange, error }: PatientPickerProp
       />
 
       <AddPatientDialog
-        triggerLabel="+ Nouveau patient"
+        triggerLabel={
+          <>
+            <PlusIcon size={14} />
+            Nouveau patient
+          </>
+        }
         triggerVariant="ghost"
         triggerSize="sm"
         onCreated={(patient) => {

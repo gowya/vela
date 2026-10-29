@@ -95,7 +95,7 @@ export function OpeningHoursEditor() {
               value={day.start}
               disabled={!day.enabled}
               onChange={(event) => updateDay(key, { start: event.target.value })}
-              className="h-8 w-28"
+              className="h-8 w-28 font-mono"
               aria-label={`Heure de début, ${label}`}
             />
             <span className="text-sm text-muted-foreground">à</span>
@@ -104,7 +104,7 @@ export function OpeningHoursEditor() {
               value={day.end}
               disabled={!day.enabled}
               onChange={(event) => updateDay(key, { end: event.target.value })}
-              className="h-8 w-28"
+              className="h-8 w-28 font-mono"
               aria-label={`Heure de fin, ${label}`}
             />
           </div>
@@ -114,7 +114,7 @@ export function OpeningHoursEditor() {
       <FieldError>{error}</FieldError>
 
       <div className="flex items-center gap-3 pt-2">
-        <Button type="button" size="sm" onClick={() => void handleSave()} disabled={isSaving}>
+        <Button type="button" onClick={() => void handleSave()} disabled={isSaving}>
           {isSaving ? "Enregistrement…" : "Enregistrer les horaires"}
         </Button>
         {saved && <span className="text-sm text-muted-foreground">Enregistré.</span>}

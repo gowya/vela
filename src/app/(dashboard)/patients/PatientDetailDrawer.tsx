@@ -58,7 +58,7 @@ import {
   XIcon,
   type Icon,
 } from "@phosphor-icons/react";
-import { FieldError } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 
 interface PatientDetailField {
   fieldDefinitionId: string;
@@ -194,8 +194,8 @@ function SortableCustomField({
       }}
       className={isWide ? "col-span-2" : undefined}
     >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <Label htmlFor={`edit-custom-${definition.id}`} className="mb-0">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <Label htmlFor={`edit-custom-${definition.id}`}>
           {definition.fieldName}
         </Label>
         <div className="flex shrink-0 items-center gap-1">
@@ -669,17 +669,6 @@ export function PatientDetailDrawer({
           </div>
           {patient && form && (
             <div className="flex shrink-0 items-center gap-2">
-              {/* Toujours visible : sur mobile le panneau couvre tout
-                  l'écran, il n'y a pas de fond sur lequel cliquer pour fermer. */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Fermer"
-                onClick={requestClose}
-              >
-                <XIcon size={16} />
-              </Button>
               <Button
                 type="button"
                 variant="ghost"
@@ -696,6 +685,17 @@ export function PatientDetailDrawer({
               )}
               <Button type="submit" form="patient-edit-form" disabled={isSubmitting}>
                 {isSubmitting ? "Enregistrement…" : "Enregistrer"}
+              </Button>
+              {/* Toujours visible : sur mobile le panneau couvre tout
+                  l'écran, il n'y a pas de fond sur lequel cliquer pour fermer. */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Fermer"
+                onClick={requestClose}
+              >
+                <XIcon size={16} />
               </Button>
             </div>
           )}
@@ -733,7 +733,7 @@ export function PatientDetailDrawer({
               <div className="flex flex-col gap-3">
                 <SectionHeader icon={UserIcon} label="Identité" />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
+                  <Field>
                     <Label htmlFor="edit-firstName">Prénom</Label>
                     <Input
                       id="edit-firstName"
@@ -741,8 +741,8 @@ export function PatientDetailDrawer({
                       value={form.firstName}
                       onChange={(event) => updateField("firstName", event.target.value)}
                     />
-                  </div>
-                  <div>
+                  </Field>
+                  <Field>
                     <Label htmlFor="edit-lastName">Nom</Label>
                     <Input
                       id="edit-lastName"
@@ -750,7 +750,7 @@ export function PatientDetailDrawer({
                       value={form.lastName}
                       onChange={(event) => updateField("lastName", event.target.value)}
                     />
-                  </div>
+                  </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
@@ -811,14 +811,14 @@ export function PatientDetailDrawer({
                         <span className="text-foreground">
                           {consultation.title ?? "Sans titre"}
                         </span>
-                        <span className="text-muted-foreground">
+                        <span className="font-mono text-muted-foreground">
                           {new Date(consultation.date).toLocaleDateString("fr-FR")}
                         </span>
                       </Link>
                     ))}
                     <Link
                       href={`/consultations?patientId=${patient.id}`}
-                      className="text-xs text-primary hover:underline"
+                      className="px-2 text-xs text-primary hover:underline"
                     >
                       Voir toutes ses consultations ({consultations.length})
                     </Link>
@@ -829,7 +829,7 @@ export function PatientDetailDrawer({
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <SectionHeader icon={AddressBookIcon} label="Contact" />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
+                  <Field>
                     <Label htmlFor="edit-email">Email</Label>
                     <Input
                       id="edit-email"
@@ -837,37 +837,37 @@ export function PatientDetailDrawer({
                       value={form.email}
                       onChange={(event) => updateField("email", event.target.value)}
                     />
-                  </div>
-                  <div>
+                  </Field>
+                  <Field>
                     <Label htmlFor="edit-phone">Téléphone</Label>
                     <Input
                       id="edit-phone"
                       value={form.phone}
                       onChange={(event) => updateField("phone", event.target.value)}
                     />
-                  </div>
+                  </Field>
                 </div>
-                <div>
+                <Field>
                   <Label htmlFor="edit-address">Adresse</Label>
                   <Input
                     id="edit-address"
                     value={form.address}
                     onChange={(event) => updateField("address", event.target.value)}
                   />
-                </div>
+                </Field>
               </div>
 
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <SectionHeader icon={NotebookIcon} label="Suivi" />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
+                  <Field>
                     <Label htmlFor="edit-identifiedIssue">Problématique identifiée</Label>
                     <Input
                       id="edit-identifiedIssue"
                       value={form.identifiedIssue}
                       onChange={(event) => updateField("identifiedIssue", event.target.value)}
                     />
-                  </div>
+                  </Field>
                   <div>
                     <Combobox
                       id="edit-status"
@@ -883,12 +883,12 @@ export function PatientDetailDrawer({
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
+                  <Field>
                     <Label>Dernier rendez-vous</Label>
-                    <p className="flex h-7 items-center text-muted-foreground">
+                    <p className="flex h-8 items-center font-mono text-muted-foreground">
                       {formatDate(patient.lastAppointmentAt)}
                     </p>
-                  </div>
+                  </Field>
                   <div>
                     <DateTimePicker
                       id="edit-nextAppointmentAt"
@@ -905,6 +905,7 @@ export function PatientDetailDrawer({
                 <SectionHeader icon={NoteIcon} label="Notes de prise en charge" />
                 <Textarea
                   id="edit-intakeNotes"
+                  aria-label="Notes de prise en charge"
                   value={form.intakeNotes}
                   onChange={(event) => updateField("intakeNotes", event.target.value)}
                 />
@@ -945,7 +946,7 @@ export function PatientDetailDrawer({
 
                 {isAddingField ? (
                   <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
-                    <div>
+                    <Field>
                       <Label htmlFor="newFieldName">Nom du champ</Label>
                       <Input
                         id="newFieldName"
@@ -953,7 +954,7 @@ export function PatientDetailDrawer({
                         value={newFieldName}
                         onChange={(event) => setNewFieldName(event.target.value)}
                       />
-                    </div>
+                    </Field>
                     <div>
                       <Combobox
                         id="newFieldType"

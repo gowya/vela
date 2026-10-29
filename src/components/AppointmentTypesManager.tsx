@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FieldError } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 
 interface FormState {
   name: string;
@@ -140,7 +140,7 @@ export function AppointmentTypesManager() {
           <span className="min-w-0 flex-1 truncate font-medium text-foreground">
             {type.name}
           </span>
-          <span className="shrink-0 text-muted-foreground">{formatDuration(type.durationMinutes)}</span>
+          <span className="shrink-0 font-mono text-muted-foreground">{formatDuration(type.durationMinutes)}</span>
 
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -177,8 +177,8 @@ export function AppointmentTypesManager() {
           </DialogHeader>
 
           <div className="flex flex-col gap-3">
-            <div>
-              <Label htmlFor="appointment-type-name" className="mb-1">
+            <Field>
+              <Label htmlFor="appointment-type-name">
                 Nom
               </Label>
               <Input
@@ -187,9 +187,9 @@ export function AppointmentTypesManager() {
                 placeholder="ex. Séance individuelle"
                 onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
               />
-            </div>
-            <div>
-              <Label htmlFor="appointment-type-duration" className="mb-1">
+            </Field>
+            <Field>
+              <Label htmlFor="appointment-type-duration">
                 Durée (minutes)
               </Label>
               <Input
@@ -204,7 +204,7 @@ export function AppointmentTypesManager() {
                   setForm((f) => ({ ...f, durationMinutes: event.target.value }))
                 }
               />
-            </div>
+            </Field>
             <FieldError>{formError}</FieldError>
           </div>
 

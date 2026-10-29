@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Field } from "@/components/ui/field";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InlineTextFieldEditor } from "@/components/InlineTextFieldEditor";
@@ -80,8 +81,8 @@ export default async function AccountPage({
               <CardDescription>{profile.email}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div>
-                <Label className="mb-1">Prénom</Label>
+              <Field>
+                <Label>Prénom</Label>
                 <InlineTextFieldEditor
                   field="firstName"
                   label="Le prénom"
@@ -89,9 +90,9 @@ export default async function AccountPage({
                   minLength={2}
                   maxLength={80}
                 />
-              </div>
-              <div>
-                <Label className="mb-1">Nom</Label>
+              </Field>
+              <Field>
+                <Label>Nom</Label>
                 <InlineTextFieldEditor
                   field="lastName"
                   label="Le nom"
@@ -99,9 +100,9 @@ export default async function AccountPage({
                   minLength={2}
                   maxLength={80}
                 />
-              </div>
-              <div>
-                <Label className="mb-1">Téléphone</Label>
+              </Field>
+              <Field>
+                <Label>Téléphone</Label>
                 <InlineTextFieldEditor
                   field="phone"
                   label="Le téléphone"
@@ -112,9 +113,9 @@ export default async function AccountPage({
                   type="tel"
                   inputMode="tel"
                 />
-              </div>
-              <div>
-                <Label className="mb-1">Spécialités</Label>
+              </Field>
+              <Field>
+                <Label>Spécialités</Label>
                 <InlineMultiSelectFieldEditor
                   field="specialties"
                   label="Les spécialités"
@@ -122,7 +123,7 @@ export default async function AccountPage({
                   options={SPECIALTIES}
                   placeholder="Non renseignées"
                 />
-              </div>
+              </Field>
 
               <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
                 <SignOutButton />
